@@ -32,10 +32,29 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
+# database
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# testing
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# auto-installed Prisma CLI skill/reference docs (not part of the app)
+/.agents
+/.claude
+/.windsurf
+skills-lock.json

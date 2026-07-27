@@ -1,0 +1,918 @@
+// CareerAtlas data model. Runs on PostgreSQL (Supabase or any Postgres host).
+//
+// Portability note: this schema intentionally avoids Postgres-only features
+// (native scalar-list columns, native enums) — enum-like fields are plain
+// `String` columns instead — so it can also run unchanged on SQLite for
+// disconnected local development if needed (just flip `provider` below to
+// "sqlite" and point DATABASE_URL at a local file).
+// Every data-bearing table carries a `dataStatus` field
+// ("reported" | "estimated" | "forecast" | "simulated") so the UI can never
+// present simulated numbers as verified real-world data.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Taxonomy: Industry -> Subindustry -> Job Family -> Occupation -> Seniority
+// ---------------------------------------------------------------------------
+
+model Industry {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String? // lucide icon name
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subindustries   Subindustry[]
+  momentumScores  IndustryMomentumScore[]
+  industryStats   IndustryStatistic[]
+  layoffStats     LayoffStatistic[]
+  remoteWorkStats RemoteWorkStatistic[]
+
+  @@index([slug])
+}
+
+model Subindustry {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  industryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  industry    Industry    @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  jobFamilies JobFamily[]
+
+  @@index([industryId])
+}
+
+model JobFamily {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String
+  subindustryId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subindustry Subindustry  @relation(fields: [subindustryId], references: [id], onDelete: Cascade)
+  occupations Occupation[]
+
+  @@index([subindustryId])
+}
+
+model SeniorityLevel {
+  id          String @id @default(cuid())
+  slug        String @unique
+  name        String
+  rank        Int // 0 = Intern ... 13 = C-Suite/Partner, used for ordering & projections
+  description String
+
+  occupationLevels OccupationSeniority[]
+}
+
+// A standardized occupation ("role"), e.g. "Software Engineer".
+model Occupation {
+  id          String @id @default(cuid())
+  slug        String @unique
+  title       String
+  jobFamilyId String
+
+  summary            String
+  responsibilities   String // JSON string array
+  automationExposure Float // 0-1, share of tasks exposed to automation (estimated)
+  remoteFriendliness Float // 0-1
+  onetSocCode        String? // O*NET-SOC code when mapped
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobFamily JobFamily @relation(fields: [jobFamilyId], references: [id], onDelete: Cascade)
+
+  aliases              OccupationAlias[]
+  seniorityLevels      OccupationSeniority[]
+  skills               OccupationSkill[]
+  certifications       OccupationCertification[]
+  salaryObservations   SalaryObservation[]
+  salaryPercentiles    SalaryPercentile[]
+  salaryHistory        SalaryHistory[]
+  salaryForecasts      SalaryForecast[]
+  employmentStats      EmploymentStatistic[]
+  jobPostingStats      JobPostingStatistic[]
+  educationRequirement OccupationEducationRequirement[]
+  transitionsFrom      CareerTransition[]               @relation("TransitionFrom")
+  transitionsTo        CareerTransition[]               @relation("TransitionTo")
+  savedOccupations     SavedOccupation[]
+  salaryScenarios      SalaryScenario[]
+  careerGoals          CareerGoal[]
+  educationOutcomes    EducationOutcome[]
+
+  @@index([jobFamilyId])
+  @@index([title])
+}
+
+// Occupation x Seniority join carries seniority-specific summary fields used
+// for quick display (detailed numbers live in SalaryObservation/-Percentile).
+model OccupationSeniority {
+  id                 String @id @default(cuid())
+  occupationId       String
+  seniorityLevelId   String
+  yearsExperienceMin Int
+  yearsExperienceMax Int?
+
+  occupation     Occupation     @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  seniorityLevel SeniorityLevel @relation(fields: [seniorityLevelId], references: [id], onDelete: Cascade)
+
+  @@unique([occupationId, seniorityLevelId])
+}
+
+model OccupationAlias {
+  id           String @id @default(cuid())
+  occupationId String
+  alias        String
+  kind         String // "abbreviation" | "synonym" | "misspelling" | "related"
+
+  occupation Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+
+  @@index([alias])
+  @@index([occupationId])
+}
+
+model Skill {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  category    String // e.g. "programming", "domain", "soft-skill", "tool"
+  description String?
+
+  occupations       OccupationSkill[]
+  demandStats       SkillDemandStatistic[]
+  transitionGapsFor TransitionSkillGap[]
+  userSkills        UserSkill[]
+  learningPlanItems LearningPlanItem[]
+}
+
+model OccupationSkill {
+  id           String  @id @default(cuid())
+  occupationId String
+  skillId      String
+  importance   Float // 0-1, relative importance/frequency in postings
+  isCore       Boolean @default(false)
+
+  occupation Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  skill      Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([occupationId, skillId])
+  @@index([skillId])
+}
+
+model Certification {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  issuer      String?
+  description String?
+
+  occupations OccupationCertification[]
+}
+
+model OccupationCertification {
+  id              String @id @default(cuid())
+  occupationId    String
+  certificationId String
+  frequency       Float // 0-1 share of postings requesting it
+
+  occupation    Occupation    @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  @@unique([occupationId, certificationId])
+}
+
+// ---------------------------------------------------------------------------
+// Geography
+// ---------------------------------------------------------------------------
+
+model Country {
+  id           String @id @default(cuid())
+  code         String @unique // ISO 3166-1 alpha-2
+  name         String
+  currencyCode String @default("USD")
+  supportLevel String @default("seed") // "full" | "partial" | "seed"
+
+  regions            Region[]
+  costOfLivingIndex  CostOfLivingIndex[]
+  salaryObservations SalaryObservation[]
+  employmentStats    EmploymentStatistic[]
+  institutions       Institution[]
+
+  @@index([code])
+}
+
+model Region {
+  id        String @id @default(cuid())
+  countryId String
+  code      String
+  name      String
+
+  country    Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  metroAreas MetroArea[]
+
+  @@unique([countryId, code])
+}
+
+model MetroArea {
+  id       String @id @default(cuid())
+  regionId String
+  name     String
+  slug     String @unique
+
+  region             Region              @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  costOfLivingIndex  CostOfLivingIndex[]
+  salaryObservations SalaryObservation[]
+
+  @@index([regionId])
+}
+
+model CostOfLivingIndex {
+  id          String   @id @default(cuid())
+  countryId   String
+  metroAreaId String?
+  index       Float // 100 = US national average baseline
+  observedAt  DateTime
+  dataStatus  String // reported | estimated | forecast | simulated
+  sourceId    String?
+
+  country   Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  metroArea MetroArea?  @relation(fields: [metroAreaId], references: [id], onDelete: Cascade)
+  source    DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([countryId])
+  @@index([metroAreaId])
+}
+
+// ---------------------------------------------------------------------------
+// Compensation
+// ---------------------------------------------------------------------------
+
+model SalaryObservation {
+  id              String  @id @default(cuid())
+  occupationId    String
+  countryId       String
+  metroAreaId     String?
+  seniorityRank   Int // denormalized OccupationSeniority.rank for fast filtering
+  workArrangement String // remote | hybrid | onsite
+  companySize     String // startup | small | mid | large | enterprise
+  employmentType  String // full_time | part_time | contract | internship
+
+  currency   String @default("USD")
+  baseSalary Float
+  bonus      Float  @default(0)
+  equity     Float  @default(0)
+  commission Float  @default(0)
+  totalComp  Float
+
+  sampleSize Int
+  observedAt DateTime
+  dataStatus String // reported | estimated | forecast | simulated
+  confidence Float // 0-1
+  sourceId   String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  country    Country     @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  metroArea  MetroArea?  @relation(fields: [metroAreaId], references: [id])
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([occupationId, countryId])
+  @@index([occupationId, seniorityRank])
+}
+
+model SalaryPercentile {
+  id            String @id @default(cuid())
+  occupationId  String
+  countryId     String
+  seniorityRank Int
+
+  p10    Float
+  p25    Float
+  median Float
+  p75    Float
+  p90    Float
+  mean   Float
+
+  observedAt DateTime
+  dataStatus String
+  sampleSize Int
+  confidence Float
+  sourceId   String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([occupationId, countryId, seniorityRank])
+}
+
+model SalaryHistory {
+  id              String  @id @default(cuid())
+  occupationId    String
+  countryId       String
+  year            Int
+  medianTotalComp Float
+  yoyChangePct    Float?
+  dataStatus      String
+  sourceId        String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@unique([occupationId, countryId, year])
+}
+
+model SalaryForecast {
+  id                   String   @id @default(cuid())
+  occupationId         String
+  countryId            String
+  yearsOut             Int // 1, 3, 5, 10
+  scenario             String // conservative | expected | aggressive
+  projectedTotalComp   Float
+  methodologyVersionId String?
+  generatedAt          DateTime @default(now())
+  dataStatus           String   @default("forecast")
+
+  occupation         Occupation          @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  methodologyVersion MethodologyVersion? @relation(fields: [methodologyVersionId], references: [id])
+
+  @@index([occupationId, countryId])
+}
+
+// ---------------------------------------------------------------------------
+// Labor market
+// ---------------------------------------------------------------------------
+
+model EmploymentStatistic {
+  id                 String  @id @default(cuid())
+  occupationId       String
+  countryId          String
+  year               Int
+  employedCount      Int
+  projectedGrowthPct Float? // e.g. BLS 10-yr projected growth
+  openingsPerYear    Int?
+  dataStatus         String
+  sourceId           String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+  country    Country     @relation(fields: [countryId], references: [id])
+
+  @@unique([occupationId, countryId, year])
+}
+
+model JobPostingStatistic {
+  id               String   @id @default(cuid())
+  occupationId     String
+  observedAt       DateTime
+  activeOpenings   Int
+  postingGrowthPct Float // period over period
+  medianDaysToFill Int?
+  dataStatus       String
+  sourceId         String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([occupationId])
+}
+
+model IndustryStatistic {
+  id                  String  @id @default(cuid())
+  industryId          String
+  year                Int
+  revenueGrowthPct    Float?
+  profitGrowthPct     Float?
+  employmentGrowthPct Float?
+  dataStatus          String
+  sourceId            String?
+
+  industry Industry    @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  source   DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@unique([industryId, year])
+}
+
+model LayoffStatistic {
+  id                String   @id @default(cuid())
+  industryId        String
+  observedAt        DateTime
+  layoffCount       Int
+  companiesAffected Int?
+  dataStatus        String
+  sourceId          String?
+
+  industry Industry    @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  source   DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([industryId])
+}
+
+model SkillDemandStatistic {
+  id              String   @id @default(cuid())
+  skillId         String
+  observedAt      DateTime
+  demandGrowthPct Float // trailing 12mo postings growth
+  postingShare    Float // 0-1 share of postings mentioning skill
+  trendDirection  String // rising | stable | declining | emerging | new
+  dataStatus      String
+  sourceId        String?
+
+  skill  Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  source DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([skillId])
+}
+
+model RemoteWorkStatistic {
+  id             String   @id @default(cuid())
+  industryId     String
+  observedAt     DateTime
+  remoteSharePct Float
+  hybridSharePct Float
+  onsiteSharePct Float
+  dataStatus     String
+  sourceId       String?
+
+  industry Industry    @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  source   DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([industryId])
+}
+
+model IndustryMomentumScore {
+  id         String   @id @default(cuid())
+  industryId String
+  observedAt DateTime
+
+  score                    Float // 0-100 composite
+  // stored component sub-scores (0-100 each) so the UI can render an
+  // explainable breakdown without recomputation
+  employmentGrowthScore    Float
+  postingGrowthScore       Float
+  salaryGrowthScore        Float
+  hiringVelocityScore      Float
+  layoffRiskScore          Float // higher = safer (inverted risk)
+  skillDemandScore         Float
+  automationSafetyScore    Float // higher = less automation exposure
+  entryLevelScore          Float
+  geographicDiversityScore Float
+
+  // default weights used to compute `score`, stored so the UI can show +
+  // let users recompute with custom weights client-side
+  weights String // JSON: Record<factor, number>
+
+  dataStatus String
+  confidence Float
+
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Cascade)
+
+  @@index([industryId, observedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Education
+// ---------------------------------------------------------------------------
+
+model Institution {
+  id                    String @id @default(cuid())
+  slug                  String @unique
+  name                  String
+  countryId             String
+  control               String // public | private_nonprofit | private_forprofit
+  levelType             String // two_year | four_year | bootcamp | trade_school
+  annualTuitionInState  Float?
+  annualTuitionOutState Float?
+
+  country  Country            @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  programs EducationProgram[]
+  costs    CollegeCost[]
+
+  @@index([countryId])
+}
+
+model Major {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  category String // e.g. STEM, Business, Humanities, Health, Trades
+
+  programs EducationProgram[]
+  outcomes EducationOutcome[]
+}
+
+model EducationProgram {
+  id            String @id @default(cuid())
+  institutionId String
+  majorId       String
+  degreeLevel   String // no_college | some_college | associate | bachelor | master | mba | professional | doctorate | bootcamp | certificate | trade_school | self_taught
+
+  institution Institution        @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  major       Major              @relation(fields: [majorId], references: [id], onDelete: Cascade)
+  outcomes    EducationOutcome[]
+
+  @@unique([institutionId, majorId, degreeLevel])
+}
+
+model EducationOutcome {
+  id                 String  @id @default(cuid())
+  educationProgramId String?
+  majorId            String
+  degreeLevel        String
+  occupationId       String?
+
+  entrySalaryMedian     Float
+  salaryPremiumPct      Float? // vs. no-college baseline, historical correlation only
+  timeToFirstRoleMonths Float?
+  employmentRatePct     Float?
+  tenYearReturnPct      Float?
+  twentyYearReturnPct   Float?
+  sampleSize            Int
+  dataStatus            String
+  confidence            Float
+  sourceId              String?
+
+  educationProgram EducationProgram? @relation(fields: [educationProgramId], references: [id])
+  major            Major             @relation(fields: [majorId], references: [id], onDelete: Cascade)
+  occupation       Occupation?       @relation(fields: [occupationId], references: [id])
+  source           DataSource?       @relation(fields: [sourceId], references: [id])
+
+  @@index([majorId, degreeLevel])
+  @@index([occupationId])
+}
+
+model OccupationEducationRequirement {
+  id           String  @id @default(cuid())
+  occupationId String
+  degreeLevel  String
+  requiresPct  Float // 0-1 share of postings requiring this level
+  prefersPct   Float // 0-1 share preferring
+  dataStatus   String
+  sourceId     String?
+
+  occupation Occupation  @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+  source     DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@unique([occupationId, degreeLevel])
+}
+
+model CollegeCost {
+  id            String  @id @default(cuid())
+  institutionId String
+  degreeLevel   String
+  totalCost     Float // full program, tuition+fees estimate
+  years         Float
+  dataStatus    String
+  sourceId      String?
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  source      DataSource? @relation(fields: [sourceId], references: [id])
+
+  @@index([institutionId])
+}
+
+model EducationRoiScenario {
+  id              String   @id @default(cuid())
+  userId          String?
+  label           String
+  degreeLevel     String
+  majorSlug       String
+  totalCost       Float
+  yearsInSchool   Float
+  forgoneEarnings Float
+  postGradSalary  Float
+  createdAt       DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Career transitions
+// ---------------------------------------------------------------------------
+
+model CareerTransition {
+  id               String @id @default(cuid())
+  fromOccupationId String
+  toOccupationId   String
+
+  category             String // adjacent | ambitious | lower_risk | highest_paying | minimal_retraining | strongest_demand
+  salaryDeltaPct       Float
+  transitionDifficulty Float // 0-100
+  opportunityScore     Float // 0-100
+  demandScore          Float // 0-100
+  confidenceScore      Float // 0-100
+  compatibilityScore   Float // 0-100 (skill+education+experience+industry overlap)
+
+  typicalTransitionMonths   Float
+  educationCommonlyRequired String? // JSON string array of degreeLevels
+  postingCoOccurrence       Float? // 0-1
+
+  dataStatus String
+  sourceId   String?
+
+  fromOccupation Occupation  @relation("TransitionFrom", fields: [fromOccupationId], references: [id], onDelete: Cascade)
+  toOccupation   Occupation  @relation("TransitionTo", fields: [toOccupationId], references: [id], onDelete: Cascade)
+  source         DataSource? @relation(fields: [sourceId], references: [id])
+
+  skillGaps TransitionSkillGap[]
+
+  @@unique([fromOccupationId, toOccupationId])
+  @@index([fromOccupationId])
+  @@index([toOccupationId])
+}
+
+model TransitionSkillGap {
+  id               String @id @default(cuid())
+  transitionId     String
+  skillId          String
+  gapType          String // missing | recommended | transferable
+  postingFrequency Float // 0-1, frequency in destination postings
+  salaryValue      Float // 0-1 relative value score
+  demandGrowth     Float // 0-1
+  monthsToLearn    Float
+
+  transition CareerTransition @relation(fields: [transitionId], references: [id], onDelete: Cascade)
+  skill      Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([transitionId, skillId])
+}
+
+// ---------------------------------------------------------------------------
+// Data governance
+// ---------------------------------------------------------------------------
+
+model DataSource {
+  id             String  @id @default(cuid())
+  slug           String  @unique
+  name           String
+  organization   String
+  url            String?
+  requiresApiKey Boolean @default(false)
+  apiKeyEnvVar   String?
+  status         String  @default("not_configured") // active | degraded | not_configured | error
+  description    String
+
+  importRuns         DataImportRun[]
+  costOfLivingIdx    CostOfLivingIndex[]
+  salaryObservations SalaryObservation[]
+  salaryPercentiles  SalaryPercentile[]
+  salaryHistory      SalaryHistory[]
+  employmentStats    EmploymentStatistic[]
+  jobPostingStats    JobPostingStatistic[]
+  industryStats      IndustryStatistic[]
+  layoffStats        LayoffStatistic[]
+  skillDemandStats   SkillDemandStatistic[]
+  remoteWorkStats    RemoteWorkStatistic[]
+  educationOutcomes  EducationOutcome[]
+  occupationEduReqs  OccupationEducationRequirement[]
+  collegeCosts       CollegeCost[]
+  careerTransitions  CareerTransition[]
+  economicIndicators EconomicIndicator[]
+}
+
+// A small number of scalar, economy-wide indicators (e.g. national average
+// wage growth) that a real data connector can populate. Kept separate from
+// the occupation/industry tables since these aren't scoped to either.
+model EconomicIndicator {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  label      String
+  value      Float
+  unit       String // "pct" | "usd" | "index"
+  observedAt DateTime
+  dataStatus String
+  sourceId   String?
+
+  source DataSource? @relation(fields: [sourceId], references: [id])
+}
+
+model DataImportRun {
+  id           String    @id @default(cuid())
+  dataSourceId String
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  status       String // running | success | partial | failed
+  rowsImported Int       @default(0)
+  rowsRejected Int       @default(0)
+  warnings     String? // JSON string array
+  errorMessage String?
+
+  dataSource    DataSource         @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  qualityChecks DataQualityCheck[]
+
+  @@index([dataSourceId])
+}
+
+model DataQualityCheck {
+  id          String  @id @default(cuid())
+  importRunId String
+  checkName   String
+  passed      Boolean
+  detail      String?
+
+  importRun DataImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@index([importRunId])
+}
+
+model MethodologyVersion {
+  id          String   @id @default(cuid())
+  scoreName   String // e.g. "salary_projection", "momentum_score", "transition_score"
+  version     String
+  description String
+  formula     String // human-readable formula / weights summary
+  publishedAt DateTime @default(now())
+
+  salaryForecasts SalaryForecast[]
+
+  @@unique([scoreName, version])
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+
+  profile               UserProfile?
+  savedOccupations      SavedOccupation[]
+  savedComparisons      SavedComparison[]
+  salaryScenarios       SalaryScenario[]
+  careerGoals           CareerGoal[]
+  userSkills            UserSkill[]
+  learningPlans         LearningPlan[]
+  educationRoiScenarios EducationRoiScenario[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id                     String    @id @default(cuid())
+  userId                 String    @unique
+  educationStatus        String?
+  currentIndustry        String?
+  currentRoleSlug        String?
+  location               String?
+  expectedGraduationYear Int?
+  skillsCsv              String? // simple CSV of skill slugs for onboarding
+  salaryGoal             Float?
+  workArrangementPref    String? // remote | hybrid | onsite
+  currentSalary          Float?
+  yearsExperience        Float?
+  degreeLevel            String?
+  major                  String?
+  companySize            String?
+  onboardedAt            DateTime?
+  updatedAt              DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SavedOccupation {
+  id           String   @id @default(cuid())
+  userId       String
+  occupationId String
+  note         String?
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, occupationId])
+}
+
+model SavedComparison {
+  id            String   @id @default(cuid())
+  userId        String?
+  slug          String   @unique
+  occupationIds String // JSON string array, max 5
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SalaryScenario {
+  id                      String   @id @default(cuid())
+  userId                  String
+  occupationId            String
+  label                   String
+  currentSalary           Float
+  yearsExperience         Float
+  annualRaisePct          Float
+  promotionEveryYears     Float
+  inflationPct            Float
+  jobChangeProbabilityPct Float
+  locationMultiplier      Float    @default(1)
+  degreeLevel             String?
+  createdAt               DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model CareerGoal {
+  id           String   @id @default(cuid())
+  userId       String
+  occupationId String?
+  targetSalary Float?
+  targetYear   Int?
+  note         String?
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation Occupation? @relation(fields: [occupationId], references: [id])
+
+  @@index([userId])
+}
+
+model UserSkill {
+  id        String   @id @default(cuid())
+  userId    String
+  skillId   String
+  level     String   @default("learning") // learning | proficient | expert
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+}
+
+model LearningPlan {
+  id                   String   @id @default(cuid())
+  userId               String
+  title                String
+  targetOccupationSlug String?
+  createdAt            DateTime @default(now())
+
+  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items LearningPlanItem[]
+}
+
+model LearningPlanItem {
+  id             String  @id @default(cuid())
+  learningPlanId String
+  skillId        String
+  done           Boolean @default(false)
+
+  learningPlan LearningPlan @relation(fields: [learningPlanId], references: [id], onDelete: Cascade)
+  skill        Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([learningPlanId, skillId])
+}
