@@ -19,6 +19,15 @@ export const DATA_SOURCES: DataSourceSeed[] = [
     description: "Official U.S. wage and employment estimates by occupation and area. A free API key raises the daily request quota but is not required.",
   },
   {
+    slug: "bls-ces",
+    name: "Current Employment Statistics (Average Hourly Earnings)",
+    organization: "U.S. Bureau of Labor Statistics",
+    url: "https://www.bls.gov/ces/",
+    requiresApiKey: false,
+    apiKeyEnvVar: "BLS_API_KEY",
+    description: "Economy-wide average hourly earnings and wage growth, used as a live reference point for the salary projection calculator's default assumptions.",
+  },
+  {
     slug: "bls-ep",
     name: "Employment Projections",
     organization: "U.S. Bureau of Labor Statistics",

@@ -62,6 +62,7 @@ export async function listOccupationsPaged(filters: OccupationListFilters) {
 }
 
 export async function getOccupationDetail(slug: string) {
+  const usCountryId = await getUsCountryId();
   const occupation = await prisma.occupation.findUnique({
     where: { slug },
     include: {
@@ -70,11 +71,13 @@ export async function getOccupationDetail(slug: string) {
       skills: { include: { skill: true }, orderBy: { importance: "desc" } },
       certifications: { include: { certification: true } },
       seniorityLevels: { include: { seniorityLevel: true }, orderBy: { seniorityLevel: { rank: "asc" } } },
-      salaryPercentiles: { orderBy: { seniorityRank: "asc" } },
-      salaryObservations: { orderBy: { workArrangement: "asc" } },
-      salaryHistory: { orderBy: { year: "asc" } },
-      salaryForecasts: { orderBy: [{ scenario: "asc" }, { yearsOut: "asc" }] },
-      employmentStats: { orderBy: { year: "desc" }, take: 1 },
+      // Scoped to the US so occupations with sampled GB/CA rows at the same
+      // seniority rank don't collide with the US figures on the role page.
+      salaryPercentiles: { where: { countryId: usCountryId }, orderBy: { seniorityRank: "asc" } },
+      salaryObservations: { where: { countryId: usCountryId }, orderBy: { workArrangement: "asc" } },
+      salaryHistory: { where: { countryId: usCountryId }, orderBy: { year: "asc" } },
+      salaryForecasts: { where: { countryId: usCountryId }, orderBy: [{ scenario: "asc" }, { yearsOut: "asc" }] },
+      employmentStats: { where: { countryId: usCountryId }, orderBy: { year: "desc" }, take: 1 },
       jobPostingStats: { orderBy: { observedAt: "desc" }, take: 1 },
       educationRequirement: true,
       transitionsFrom: {

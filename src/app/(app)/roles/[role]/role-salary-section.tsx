@@ -63,13 +63,16 @@ export function RoleSalarySection({ percentiles, seniorityOptions }: { percentil
         <MiniStat label="Median" value={current.median} emphasis />
         <MiniStat label="Mean" value={current.mean} />
         <MiniStat label="10th–90th pct" value={`$${Math.round(current.p10 / 1000)}k–$${Math.round(current.p90 / 1000)}k`} raw />
-        <MiniStat label="Observations" value={current.sampleSize} raw />
+        <MiniStat label={current.dataStatus === "reported" ? "Employed (US)" : "Observations"} value={current.sampleSize} raw />
       </div>
 
       <SalaryDistributionChart data={chartData} highlightIndex={2} />
       <p className="text-xs text-muted-foreground">
-        Confidence: {Math.round(current.confidence * 100)}% · based on {current.sampleSize.toLocaleString()} simulated
-        observations · last updated {new Date(current.observedAt).toLocaleDateString()}
+        Confidence: {Math.round(current.confidence * 100)}%
+        {current.dataStatus === "reported"
+          ? ` · based on real BLS OEWS data covering all experience levels (not broken out by seniority) · ${current.sampleSize.toLocaleString()} employed nationally`
+          : ` · based on ${current.sampleSize.toLocaleString()} simulated observations`}{" "}
+        · last updated {new Date(current.observedAt).toLocaleDateString()}
       </p>
     </div>
   );

@@ -20,6 +20,7 @@ interface Seed {
   title: string;
   industryName: string;
   currentSalary: number;
+  currentSalaryIsReported: boolean;
   yearsExperience: number;
   occupationGrowthPct: number;
   industryMomentumScore: number;
@@ -173,7 +174,13 @@ export function ProjectionCalculator({ seed, liveWageGrowthPct }: { seed: Seed; 
           <AccordionItem value="context">
             <AccordionTrigger className="text-sm">Where do the defaults come from?</AccordionTrigger>
             <AccordionContent className="text-xs text-muted-foreground space-y-1">
-              <p>Current salary defaults to this role&apos;s simulated median at a mid seniority level.</p>
+              <p>
+                Current salary defaults to this role&apos;s{" "}
+                {seed.currentSalaryIsReported
+                  ? "real median wage reported by the BLS OEWS survey (all experience levels combined)"
+                  : "simulated median at a mid seniority level"}
+                .
+              </p>
               <p>Industry momentum ({seed.industryMomentumScore}/100) and occupation growth ({(seed.occupationGrowthPct * 100).toFixed(1)}%/yr) come from {seed.industryName}&apos;s trend data.</p>
               {liveWageGrowthPct != null && (
                 <p>The default annual raise ({liveWageGrowthPct}%) is a <strong>live, reported figure</strong> from the BLS Average Hourly Earnings series — not simulated.</p>

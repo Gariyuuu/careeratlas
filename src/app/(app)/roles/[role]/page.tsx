@@ -36,6 +36,7 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
   const industry = occ.jobFamily.subindustry.industry;
   const employment = occ.employmentStats[0];
   const postings = occ.jobPostingStats[0];
+  const hasReportedSalaryData = occ.salaryPercentiles.some((p) => p.dataStatus === "reported");
 
   const trendData: SalaryTrendPoint[] = [
     ...occ.salaryHistory.map((h) => ({ label: String(h.year), historical: h.medianTotalComp })),
@@ -200,7 +201,7 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
               <Row label="Active openings (simulated)" value={postings?.activeOpenings.toLocaleString() ?? "—"} />
               <Row label="Posting growth" value={postings ? `${postings.postingGrowthPct > 0 ? "+" : ""}${postings.postingGrowthPct}%` : "—"} />
               <Row label="Median days to fill" value={postings?.medianDaysToFill ? `${postings.medianDaysToFill} days` : "—"} />
-              <Row label="Employed (US, simulated)" value={employment?.employedCount.toLocaleString() ?? "—"} />
+              <Row label={`Employed (US${employment?.dataStatus === "reported" ? "" : ", simulated"})`} value={employment?.employedCount.toLocaleString() ?? "—"} />
               <Row label="Projected growth" value={employment?.projectedGrowthPct != null ? `${employment.projectedGrowthPct}%/yr` : "—"} />
               <DataStatusBadge status={employment?.dataStatus} />
             </CardContent>
@@ -234,8 +235,18 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
             </CardHeader>
             <CardContent className="text-xs text-muted-foreground space-y-2">
               <p>
-                Compensation and demand figures on this page are <strong>simulated demo data</strong>, deterministically generated for
-                this build of CareerAtlas — not verified real-world observations.
+                {hasReportedSalaryData ? (
+                  <>
+                    Compensation and employment figures on this page are <strong>real, reported data</strong> from the U.S. Bureau of
+                    Labor Statistics OEWS survey (all experience levels combined — BLS doesn&apos;t break wages out by seniority).
+                    Historical trend, projections, and demand figures below remain simulated demo data.
+                  </>
+                ) : (
+                  <>
+                    Compensation and demand figures on this page are <strong>simulated demo data</strong>, deterministically generated
+                    for this build of CareerAtlas — not verified real-world observations.
+                  </>
+                )}
               </p>
               <Link href="/methodology" className="underline underline-offset-2 text-foreground">
                 Read the full methodology

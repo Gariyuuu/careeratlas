@@ -33,6 +33,7 @@ export async function getProjectionSeed(slug: string) {
     title: occupation.title,
     industryName: occupation.jobFamily.subindustry.industry.name,
     currentSalary: midPercentile?.median ?? 90_000,
+    currentSalaryIsReported: midPercentile?.dataStatus === "reported",
     yearsExperience: (midPercentile?.seniorityRank ?? 4) * 1.5,
     occupationGrowthPct: (occupation.employmentStats[0]?.projectedGrowthPct ?? 3) / 100,
     industryMomentumScore: industry?.momentumScores[0]?.score ?? 50,

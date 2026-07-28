@@ -28,7 +28,7 @@ export interface NormalizedWagePoint {
 }
 
 export const blsAverageHourlyEarningsProvider: DataProvider<BlsResponse, NormalizedWagePoint> = {
-  slug: "bls-oews",
+  slug: "bls-ces",
 
   isConfigured() {
     // BLS's public API works unauthenticated at a low daily rate limit; a
@@ -78,7 +78,7 @@ export const blsAverageHourlyEarningsProvider: DataProvider<BlsResponse, Normali
     const yearAgo = yearAgoIndex >= 0 ? sorted[yearAgoIndex] : undefined;
     if (!latest) return 0;
 
-    const source = await prisma.dataSource.findUnique({ where: { slug: "bls-oews" } });
+    const source = await prisma.dataSource.findUnique({ where: { slug: "bls-ces" } });
 
     await prisma.economicIndicator.upsert({
       where: { slug: "us-avg-hourly-earnings-level" },
