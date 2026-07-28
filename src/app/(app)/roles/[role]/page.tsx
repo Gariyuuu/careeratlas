@@ -37,6 +37,7 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
   const employment = occ.employmentStats[0];
   const postings = occ.jobPostingStats[0];
   const hasReportedSalaryData = occ.salaryPercentiles.some((p) => p.dataStatus === "reported");
+  const hasReportedEducationData = occ.educationRequirement.some((r) => r.dataStatus === "reported");
 
   const trendData: SalaryTrendPoint[] = [
     ...occ.salaryHistory.map((h) => ({ label: String(h.year), historical: h.medianTotalComp })),
@@ -164,9 +165,16 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
           )}
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Education requirements</CardTitle>
-              <p className="text-xs text-muted-foreground">Share of postings that require or prefer each level — a signal of typical hiring bars, not a hard rule.</p>
+            <CardHeader className="flex flex-row items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-base">Education requirements</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {occ.educationRequirement.some((r) => r.dataStatus === "reported")
+                    ? "Share of surveyed workers/experts reporting each education level as typical for this occupation (O*NET)."
+                    : "Share of postings that require or prefer each level — a signal of typical hiring bars, not a hard rule."}
+                </p>
+              </div>
+              <DataStatusBadge status={occ.educationRequirement[0]?.dataStatus} className="shrink-0" />
             </CardHeader>
             <CardContent className="space-y-3">
               {occ.educationRequirement.map((r) => (
@@ -175,7 +183,7 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
                   <div className="flex-1 flex items-center gap-2">
                     <Progress value={r.requiresPct * 100} className="h-2" />
                     <span className="text-xs text-muted-foreground w-24 shrink-0">
-                      {Math.round(r.requiresPct * 100)}% require · {Math.round(r.prefersPct * 100)}% prefer
+                      {r.dataStatus === "reported" ? `${Math.round(r.requiresPct * 100)}% typical` : `${Math.round(r.requiresPct * 100)}% require · ${Math.round(r.prefersPct * 100)}% prefer`}
                     </span>
                   </div>
                 </div>
@@ -239,7 +247,13 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
                   <>
                     Compensation and employment figures on this page are <strong>real, reported data</strong> from the U.S. Bureau of
                     Labor Statistics OEWS survey (all experience levels combined — BLS doesn&apos;t break wages out by seniority).
-                    Historical trend, projections, and demand figures below remain simulated demo data.
+                    {hasReportedEducationData && " Education requirements and some alternate titles are real data from O*NET."} Historical
+                    trend, projections, and demand figures below remain simulated demo data.
+                  </>
+                ) : hasReportedEducationData ? (
+                  <>
+                    Education requirements on this page are <strong>real, reported data</strong> from O*NET. Compensation and demand
+                    figures remain simulated demo data.
                   </>
                 ) : (
                   <>
