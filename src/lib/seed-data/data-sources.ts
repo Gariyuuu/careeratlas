@@ -37,6 +37,14 @@ export const DATA_SOURCES: DataSourceSeed[] = [
     description: "10-year U.S. occupational employment growth projections.",
   },
   {
+    slug: "revelio-rpls",
+    name: "Revelio Public Labor Statistics",
+    organization: "Revelio Labs",
+    url: "https://www.reveliolabs.com/public-labor-statistics/",
+    requiresApiKey: false,
+    description: "Free, monthly-updated real job-posting and employment trends by 2-digit occupation group. Applied to specific roles as an estimate (not a direct report), since coverage is at the broader occupational-family level.",
+  },
+  {
     slug: "onet",
     name: "O*NET Database",
     organization: "U.S. Department of Labor",

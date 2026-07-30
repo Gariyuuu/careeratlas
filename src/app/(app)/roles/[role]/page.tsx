@@ -207,8 +207,13 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Row label="Active openings (simulated)" value={postings?.activeOpenings.toLocaleString() ?? "—"} />
-              <Row label="Posting growth" value={postings ? `${postings.postingGrowthPct > 0 ? "+" : ""}${postings.postingGrowthPct}%` : "—"} />
+              <Row
+                label={`Posting growth${postings?.dataStatus === "estimated" ? " (est. from real category-level trend)" : ""}`}
+                value={postings ? `${postings.postingGrowthPct > 0 ? "+" : ""}${postings.postingGrowthPct}%` : "—"}
+              />
               <Row label="Median days to fill" value={postings?.medianDaysToFill ? `${postings.medianDaysToFill} days` : "—"} />
+              <DataStatusBadge status={postings?.dataStatus} />
+              <div className="pt-2 border-t" />
               <Row label={`Employed (US${employment?.dataStatus === "reported" ? "" : ", simulated"})`} value={employment?.employedCount.toLocaleString() ?? "—"} />
               <Row label="Projected growth" value={employment?.projectedGrowthPct != null ? `${employment.projectedGrowthPct}%/yr` : "—"} />
               <DataStatusBadge status={employment?.dataStatus} />
