@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { DataStatusBadge } from "@/components/data-status-badge";
 import { X } from "lucide-react";
 
 export interface OutcomeOption {
@@ -17,11 +18,22 @@ export interface OutcomeOption {
   tenYearReturnPct: number | null;
 }
 
-const BASELINE_NO_COLLEGE_SALARY = 38_000;
+export interface InstitutionCostOption {
+  slug: string;
+  name: string;
+  degreeLevel: string;
+  totalCost: number;
+  years: number;
+  dataStatus: string;
+}
 
-export function EducationCompareTool({ options }: { options: OutcomeOption[] }) {
+const BASELINE_NO_COLLEGE_SALARY = 38_000;
+const GENERIC = "generic";
+
+export function EducationCompareTool({ options, institutionCosts }: { options: OutcomeOption[]; institutionCosts: InstitutionCostOption[] }) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>(() => (options[0] ? [options[0].id] : []));
   const [overrides, setOverrides] = React.useState<Record<string, { totalCost: number; years: number; forgoneEarningsPerYear: number }>>({});
+  const [schoolByCard, setSchoolByCard] = React.useState<Record<string, string>>({});
   const [horizon, setHorizon] = React.useState<10 | 20>(10);
 
   const addSlot = () => {
@@ -61,6 +73,9 @@ export function EducationCompareTool({ options }: { options: OutcomeOption[] }) 
           const opt = options.find((o) => o.id === id);
           if (!opt) return null;
           const values = overrides[id] ?? defaultsFor(opt);
+          const schoolsForLevel = institutionCosts.filter((i) => i.degreeLevel === opt.degreeLevel);
+          const schoolSlug = schoolByCard[id] ?? GENERIC;
+          const selectedSchool = schoolsForLevel.find((s) => s.slug === schoolSlug);
           const roi = computeEducationRoi({
             totalCost: values.totalCost,
             yearsInSchool: values.years,
@@ -96,6 +111,35 @@ export function EducationCompareTool({ options }: { options: OutcomeOption[] }) 
                 </Select>
               </CardHeader>
               <CardContent className="space-y-3">
+                {schoolsForLevel.length > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">School (real tuition)</Label>
+                    <Select
+                      value={schoolSlug}
+                      onValueChange={(v) => {
+                        setSchoolByCard({ ...schoolByCard, [id]: v });
+                        const school = schoolsForLevel.find((s) => s.slug === v);
+                        if (school) {
+                          setOverrides({ ...overrides, [id]: { ...values, totalCost: school.totalCost, years: school.years } });
+                        } else {
+                          setOverrides({ ...overrides, [id]: defaultsFor(opt) });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={GENERIC}>Generic estimate</SelectItem>
+                        {schoolsForLevel.map((s) => (
+                          <SelectItem key={s.slug} value={s.slug}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <FieldRow
                   id={`total-cost-${id}`}
                   label="Total cost"
@@ -114,6 +158,7 @@ export function EducationCompareTool({ options }: { options: OutcomeOption[] }) 
                   value={values.forgoneEarningsPerYear}
                   onChange={(v) => setOverrides({ ...overrides, [id]: { ...values, forgoneEarningsPerYear: v } })}
                 />
+                {selectedSchool && <DataStatusBadge status={selectedSchool.dataStatus} />}
                 <div className="pt-2 border-t space-y-1.5 text-sm">
                   <Row label="Net cost" value={`$${roi.netCost.toLocaleString()}`} />
                   <Row label="Break-even year" value={roi.breakEvenYear ? `Year ${roi.breakEvenYear}` : "Beyond horizon"} />
@@ -129,7 +174,8 @@ export function EducationCompareTool({ options }: { options: OutcomeOption[] }) 
         })}
       </div>
       <p className="text-xs text-muted-foreground">
-        Baseline (no-college) comparison salary assumed at ${BASELINE_NO_COLLEGE_SALARY.toLocaleString()}/yr, growing 3%/yr. All figures editable above — this is a transparent, simplified model, not financial advice.
+        Baseline (no-college) comparison salary assumed at ${BASELINE_NO_COLLEGE_SALARY.toLocaleString()}/yr, growing 3%/yr. Total cost
+        defaults to a generic estimate, or pick a real school above (tuition marked <DataStatusBadge status="reported" className="inline align-middle mx-0.5" /> is real, from the U.S. Department of Education). All figures editable — this is a transparent, simplified model, not financial advice.
       </p>
     </div>
   );
