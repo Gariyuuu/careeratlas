@@ -27,10 +27,19 @@ export interface InstitutionCostOption {
   dataStatus: string;
 }
 
-const BASELINE_NO_COLLEGE_SALARY = 38_000;
 const GENERIC = "generic";
 
-export function EducationCompareTool({ options, institutionCosts }: { options: OutcomeOption[]; institutionCosts: InstitutionCostOption[] }) {
+export function EducationCompareTool({
+  options,
+  institutionCosts,
+  baselineNoCollegeSalary,
+  baselineIsReported,
+}: {
+  options: OutcomeOption[];
+  institutionCosts: InstitutionCostOption[];
+  baselineNoCollegeSalary: number;
+  baselineIsReported: boolean;
+}) {
   const [selectedIds, setSelectedIds] = React.useState<string[]>(() => (options[0] ? [options[0].id] : []));
   const [overrides, setOverrides] = React.useState<Record<string, { totalCost: number; years: number; forgoneEarningsPerYear: number }>>({});
   const [schoolByCard, setSchoolByCard] = React.useState<Record<string, string>>({});
@@ -81,7 +90,7 @@ export function EducationCompareTool({ options, institutionCosts }: { options: O
             yearsInSchool: values.years,
             forgoneEarningsPerYear: values.forgoneEarningsPerYear,
             postGradSalary: opt.entrySalaryMedian,
-            baselineSalary: BASELINE_NO_COLLEGE_SALARY,
+            baselineSalary: baselineNoCollegeSalary,
             annualGrowthPct: 0.03,
             horizonYears: horizon,
           });
@@ -174,8 +183,11 @@ export function EducationCompareTool({ options, institutionCosts }: { options: O
         })}
       </div>
       <p className="text-xs text-muted-foreground">
-        Baseline (no-college) comparison salary assumed at ${BASELINE_NO_COLLEGE_SALARY.toLocaleString()}/yr, growing 3%/yr. Total cost
-        defaults to a generic estimate, or pick a real school above (tuition marked <DataStatusBadge status="reported" className="inline align-middle mx-0.5" /> is real, from the U.S. Department of Education). All figures editable — this is a transparent, simplified model, not financial advice.
+        Baseline (no-college) comparison salary: ${baselineNoCollegeSalary.toLocaleString()}/yr
+        {baselineIsReported ? " — real median earnings for high school graduates (U.S. Census Bureau ACS)" : " (simulated estimate)"},
+        growing 3%/yr. Total cost defaults to a generic estimate, or pick a real school above (tuition marked{" "}
+        <DataStatusBadge status="reported" className="inline align-middle mx-0.5" /> is real, from the U.S. Department of Education). All
+        figures editable — this is a transparent, simplified model, not financial advice.
       </p>
     </div>
   );

@@ -79,6 +79,7 @@ export const MAJORS: MajorSeed[] = [
   m("Kinesiology", "Health"),
   m("Criminal Justice", "Social Science"),
   m("Education", "Social Science"),
+  m("General / No Declared Major", "General"),
 ];
 
 export interface InstitutionSeed {

@@ -30,6 +30,12 @@ export async function getEducationOutcomeById(id: string) {
   return prisma.educationOutcome.findUnique({ where: { id }, include: { major: true, educationProgram: { include: { institution: true } } } });
 }
 
+export async function getLiveNoCollegeBaselineSalary(): Promise<{ value: number; isReported: boolean }> {
+  const indicator = await prisma.economicIndicator.findUnique({ where: { slug: "us-median-earnings-hs-grad" } });
+  if (indicator) return { value: Math.round(indicator.value), isReported: indicator.dataStatus === "reported" };
+  return { value: 38_000, isReported: false };
+}
+
 export async function listAllEducationOutcomesForCompare() {
   return prisma.educationOutcome.findMany({
     include: { major: true },
