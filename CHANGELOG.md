@@ -6,6 +6,34 @@ version-numbering scheme anywhere in the repo (`package.json`'s
 starts here; entries below are either this audit's own work or reconstructed
 from `git log` — nothing is invented.
 
+## 2026-08-07 — Documentation re-verification / final transfer checkpoint
+
+Follow-up pass re-verifying the 2026-08-06 doc set against the real repo
+state, per an explicit "final transfer checkpoint" task. No application
+code was touched.
+
+**Verified unchanged/still accurate**: `git status` clean and up to date
+with `origin/main`; `npm run lint` (1 harmless warning), `npx tsc --noEmit`
+(0 errors), `npm run test` (34/34) all still pass; TASK-001
+(admin-page/action auth gap), TASK-002 (`README.md` still stale re:
+Census ACS/College Scorecard), and TASK-003 (3 of 10 scoring functions
+still untested) all re-confirmed as genuinely still open. No secrets found
+in any tracked file or documentation file.
+
+**Fixed (stale docs)**:
+- `PROJECT_STATE.md` and `CLAUDE.md` described HEAD as `0b10636` and "8
+  commits", but the 2026-08-06 doc set was itself committed afterward as
+  `d4c16f7` (9th commit), which the docs never got updated to reflect —
+  corrected in both files, plus a corrective note in `SESSION_LOG.md`.
+- `DATABASE.md`, `HANDOFF.md`, `FILE_MAP.md`, and `CLAUDE.md` (3 places)
+  all claimed the Prisma schema has "37 models"; a direct count
+  (`grep -c "^model " prisma/schema.prisma`) returns **51**. Corrected in
+  all 4 files.
+- `TASKS.md`'s "Recently completed" list and `HANDOFF.md`'s "Prompt for the
+  next Claude Code account" section refreshed to match.
+
+Full session detail: `SESSION_LOG.md`'s 2026-08-07 entry.
+
 ## 2026-08-06 — Documentation & handoff audit
 
 Performed a full repository audit and brought `careeratlas`'s AI-facing

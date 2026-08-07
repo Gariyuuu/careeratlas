@@ -42,11 +42,16 @@ currently have none at all — see `SECURITY.md` for the full writeup.
 
 ## What was the previous agent doing?
 
-The previous session (2026-08-06) performed a full, read-only repository
-audit and produced this entire documentation set (`CLAUDE.md` revised, 16
-other files created). It changed no application code. See
-`SESSION_LOG.md`'s first entry for the complete record of what was read,
-what was run, and what was found.
+The 2026-08-06 session performed a full, read-only repository audit and
+produced this entire documentation set (`CLAUDE.md` revised, 16 other files
+created), then committed it as `d4c16f7`. A 2026-08-07 follow-up session
+re-verified that doc set against the real repo state as a "final transfer
+checkpoint" pass, fixed two categories of staleness it found (the doc set's
+description of its own git HEAD, and a wrong Prisma model count — see
+`CHANGELOG.md`'s 2026-08-07 entry), and reconfirmed all previously-open
+tasks (TASK-001/002/003) are still genuinely open. Neither session changed
+any application code. See `SESSION_LOG.md` for the complete record of both
+sessions.
 
 ## What works right now?
 
@@ -90,7 +95,8 @@ and 3 of 10 scoring functions have no unit tests (TASK-003).
 
 ## Which files are most important?
 
-- `prisma/schema.prisma` — the entire data model (37 models).
+- `prisma/schema.prisma` — the entire data model (51 models, re-counted
+  2026-08-07; a prior audit undercounted this as 37 — see `DATABASE.md`).
 - `src/lib/auth.ts` — the entire auth system.
 - `src/lib/scoring/*.ts` — every user-facing formula, unit-tested and
   shared between the seed script and live pages.
@@ -150,15 +156,23 @@ FEATURES.md, DATABASE.md, SECURITY.md, and DECISIONS.md for depth on
 whatever area you're about to touch.
 
 Then, independently:
-1. Run `git status` and `git log -5` and compare against what
-   PROJECT_STATE.md claims — flag any contradiction before doing anything
-   else.
+1. Run `git status`, `git log -5`, and (if a remote is configured)
+   `git fetch origin` read-only, and compare against what PROJECT_STATE.md
+   claims — flag any contradiction before doing anything else. As of the
+   2026-08-07 checkpoint, HEAD is `d4c16f7` ("docs: add full handoff
+   documentation system", 9 commits total on main) and the tree is clean.
 2. Run `npm run lint && npx tsc --noEmit && npm run test` and confirm they
-   still pass (they did as of the 2026-08-06 documentation audit).
+   still pass (they did as of both the 2026-08-06 audit and the 2026-08-07
+   checkpoint: 1 harmless lint warning, 0 type errors, 34/34 unit tests).
 3. Summarize your understanding of the current state and the task you're
    about to do back to the user BEFORE editing anything, and explicitly
    flag any documentation you find stale, contradictory, or unverifiable
-   against the actual code.
+   against the actual code. Note: this doc set has already been caught
+   going stale once by describing itself before its own commit landed
+   (see SESSION_LOG.md's 2026-08-07 entry) — if you edit and commit these
+   docs, update any "latest commit"/"N commits total" claims as the very
+   last step before committing, not before, or you'll reintroduce the same
+   bug.
 
 Continue the current recommended task (TASK-001 in TASKS.md — adding
 auth/authorization to /admin/data-status and triggerDataImport — unless the

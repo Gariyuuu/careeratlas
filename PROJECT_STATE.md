@@ -1,29 +1,36 @@
 # PROJECT_STATE.md — Exact Handoff Snapshot
 
 This file reflects the repository's exact state as observed during the
-2026-08-06 documentation audit. It is meant to be re-verified (git status,
-git log) at the start of every future session, not trusted blindly.
+2026-08-06 documentation audit, **re-verified 2026-08-07** in a follow-up
+checkpoint pass. It is meant to be re-verified (git status, git log) at the
+start of every future session, not trusted blindly.
 
 ## Audit timestamp
 
-2026-08-06, performed by a Claude Code session (account/agent identity not
-tracked by this session — see `SESSION_LOG.md`). No prior `PROJECT_STATE.md`
-existed before this audit.
+- **2026-08-06** — original audit, performed by a Claude Code session
+  (account/agent identity not tracked by that session — see
+  `SESSION_LOG.md`). No prior `PROJECT_STATE.md` existed before that audit.
+- **2026-08-07** — follow-up re-verification/checkpoint pass (this update).
+  Confirmed the 2026-08-06 audit's doc set was itself committed as `d4c16f7`
+  (it had described itself as uncommitted, which was accurate at the moment
+  it was written but went stale the instant that commit landed — fixed
+  here). Also corrected a wrong Prisma model count (37 → 51, see
+  `DATABASE.md`) found stale across multiple files.
 
-## Git state (verified this session)
+## Git state (re-verified 2026-08-07)
 
 - **Branch**: `main`
-- **Tracking**: up to date with `origin/main` (`git status` reported "Your
-  branch is up to date with 'origin/main'.")
-- **Working tree**: clean — `git status` reported "nothing to commit, working
-  tree clean" at the start of this session.
+- **Tracking**: up to date with `origin/main` (`git status` and
+  `git fetch origin` both confirm this).
+- **Working tree**: clean — `git status` reports "nothing to commit, working
+  tree clean".
 - **Untracked files**: none (repo-tracked scope). Directories `.agents/`,
   `.claude/`, `.windsurf/`, `test-results/`, `playwright-report/`, `.next/`,
   `.vercel/`, `node_modules/`, `tsconfig.tsbuildinfo` exist on disk but are
   all covered by `.gitignore`.
-- **Latest commit**: `0b10636` — "Add custom favicon matching the app's
-  chart-mark branding" (2026-08-06 03:41:19 -0700).
-- **Full commit history** (8 commits, oldest first):
+- **Latest commit**: `d4c16f7` — "docs: add full handoff documentation
+  system" (2026-08-06 20:20:07 -0700) — **HEAD**.
+- **Full commit history** (9 commits, oldest first):
   1. `1d06f96` — Initial commit from Create Next App (2026-07-24)
   2. `4efbc64` — Build CareerAtlas: full-stack career salary, transitions,
      education, and industry trend tracker (2026-07-26) — the large initial
@@ -39,10 +46,15 @@ existed before this audit.
   7. `90ef269` — Add Census ACS connector: real median earnings by
      education level (2026-08-01)
   8. `0b10636` — Add custom favicon matching the app's chart-mark branding
-     (2026-08-06) — **HEAD**
+     (2026-08-06)
+  9. `d4c16f7` — docs: add full handoff documentation system (2026-08-06)
+     — **HEAD**
 - **Remote**: `origin` → `https://github.com/Gariyuuu/careeratlas.git`
-- This audit made **no commits** and changed **no application code** — only
-  the 17 documentation files listed in `CHANGELOG.md`'s audit entry.
+- The 2026-08-06 audit changed **no application code** — only the 17
+  documentation files listed in `CHANGELOG.md`'s audit entry, which were
+  subsequently committed as `d4c16f7`. This 2026-08-07 checkpoint pass
+  likewise changed only documentation (fixing the staleness described
+  above), and also made no application code changes.
 
 ## Active objective
 

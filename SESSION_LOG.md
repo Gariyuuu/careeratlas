@@ -67,9 +67,13 @@ explicitly prohibited touching.
 
 **Results**: lint clean (1 harmless warning), typecheck clean, unit tests
 34/34 passing. No errors or crashes encountered while reading the
-codebase. Working tree was clean before and remains clean after this
-session (only new/modified files are the documentation set listed above,
-none of which were committed).
+codebase. Working tree was clean before this session and, at the moment
+this entry was originally written, the new/modified documentation files
+were uncommitted. **Correction added 2026-08-07**: this doc set was in fact
+committed shortly after, as `d4c16f7` ("docs: add full handoff
+documentation system") — this line was accurate when written but the doc
+set itself didn't get updated to reflect the commit that followed. See the
+2026-08-07 entry below for the fix and what else it caught.
 
 **Decisions made**: none that changed application behavior — this session
 made only documentation decisions (how to structure/word each file,
@@ -100,6 +104,85 @@ it's the only finding with real security weight; TASK-002 through TASK-006
 can follow in any order. Before starting, re-run `git status`/`git log` and
 `npm run lint && npx tsc --noEmit && npm run test` to confirm this
 session's clean baseline still holds.
+
+---
+
+## 2026-08-07 — Final transfer checkpoint / doc re-verification pass
+
+**Account/agent**: unknown (Claude Code session; identity not tracked/passed
+to this session either).
+
+**Goal**: re-verify all 17 canonical doc files against the real current
+repo state (a "final transfer checkpoint" pass), fix anything stale, scan
+for secrets, resolve cross-file contradictions, and refresh the "Prompt for
+the next Claude Code account" section in `HANDOFF.md`.
+
+**Files inspected**: `PROJECT_STATE.md`, `TASKS.md`, `HANDOFF.md`,
+`CLAUDE.md`, `FEATURES.md`, `DATABASE.md`, `FILE_MAP.md`, `README.md`, all
+in full; `prisma/schema.prisma` (re-counted models directly);
+`src/app/(app)/admin/data-status/page.tsx` and `src/lib/actions/admin.ts`
+(re-verified the no-auth claim); `src/lib/scoring/*.ts` (re-verified the
+3-untested-functions claim); `.gitignore` and `git ls-files` (secret scan).
+
+**Commands run**: `git status`, `git log --oneline -5`, `git fetch origin`,
+`git show --stat d4c16f7`, `npm run lint`, `npx tsc --noEmit`, `npm run
+test`, `grep -c "^model " prisma/schema.prisma`, `git grep` for
+connection-string/API-key-shaped secrets across tracked files and all `.md`
+files — all read-only/non-destructive.
+
+**Tests run**: `npm run test` (Vitest, 34/34 passing, 7 files) — same
+result as the 2026-08-06 audit. `npm run build` and `npm run test:e2e`
+again deliberately not run, same live-`DATABASE_URL` reasoning as before.
+
+**Results**: `npm run lint` (1 harmless warning, same as before), `npx tsc
+--noEmit` (0 errors), `npm run test` (34/34) all still pass — the
+2026-08-06 baseline holds. `git status` clean, up to date with
+`origin/main`; `git fetch origin` confirmed no remote-side drift either.
+
+**Decisions made**: none architectural. Corrected two categories of
+documentation staleness (see "Problems found").
+
+**Problems found and fixed**:
+1. **Self-referential staleness**: the 2026-08-06 doc set described itself
+   as the repo's current/uncommitted state and HEAD as `0b10636`, but the
+   doc set was actually committed afterward as `d4c16f7`, which then
+   *became* HEAD — the docs never got updated to describe their own
+   commit. Fixed in `PROJECT_STATE.md` (git state section, now 9 commits
+   with `d4c16f7` as HEAD), `CLAUDE.md` ("Current status" section), and
+   `SESSION_LOG.md` (corrected the stale "none of which were committed"
+   line with an inline note rather than rewriting history).
+2. **Wrong Prisma model count**: `DATABASE.md`, `HANDOFF.md`, `FILE_MAP.md`,
+   and `CLAUDE.md` (3 occurrences) all claimed "37 models". Direct count via
+   `grep -c "^model " prisma/schema.prisma` returns **51**. Fixed in all 4
+   files.
+3. Everything else re-checked came back accurate and unchanged: TASK-001
+   (admin page/action genuinely has no `auth()` call — confirmed by direct
+   grep/read), TASK-002 (`README.md`'s "not implemented" section is still
+   genuinely stale re: Census ACS/College Scorecard — confirmed by reading
+   it), TASK-003 (exactly 3 of 10 scoring files lack a `*.test.ts` —
+   confirmed by `ls`), lint/typecheck/test results, and the git
+   branch/remote/clean-tree state.
+4. **Secret scan**: no real secrets found in any tracked file or any of the
+   17 docs — `.env`/`.env.local` remain correctly gitignored (only
+   `.env.example` is tracked, containing only placeholder values). No
+   action needed.
+
+**Work completed**: full re-verification pass; the staleness above is
+fixed; no cross-file contradictions remain as far as this session's read
+covered.
+
+**Work remaining**: same as before this pass — TASK-001 through TASK-006 in
+`TASKS.md` are still open product/doc work, none of it addressed by this
+documentation-only pass (out of scope, per this session's instructions).
+
+**Recommended next action**: same as the 2026-08-06 audit's recommendation
+— TASK-001 (admin auth gap) is still the highest-value fix. A future
+session should also watch for this same "self-referential staleness"
+pattern: if you edit these doc files and then commit them, the commit SHA
+you just created will immediately make the "latest commit" claims inside
+those same files stale again — consider updating `PROJECT_STATE.md`'s git
+section (or noting "as of this commit" language) as the literal last step
+before committing, not before.
 
 ---
 

@@ -14,10 +14,11 @@ on **SQLite** (flip `datasource.provider` to `"sqlite"`, point
 
 ## Schema location
 
-`/Users/gariyuu/Projects/careeratlas/prisma/schema.prisma` — 37 models, ~920
-lines, organized under 7 comment-delimited sections: Taxonomy, Geography,
-Compensation, Labor market, Education, Career transitions, Data governance,
-Users.
+`/Users/gariyuu/Projects/careeratlas/prisma/schema.prisma` — 51 models
+(re-counted 2026-08-07 via `grep -c "^model " prisma/schema.prisma`; the
+2026-08-06 audit undercounted this as 37), ~920 lines, organized under 7
+comment-delimited sections: Taxonomy, Geography, Compensation, Labor market,
+Education, Career transitions, Data governance, Users.
 
 ## Migrations
 

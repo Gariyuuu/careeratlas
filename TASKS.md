@@ -200,6 +200,10 @@ primitive before calling `deleteAccountAction`.
 
 ## Recently completed (from git history, not this audit)
 
+- Commit the 2026-08-06 documentation audit's 17-file doc set (`d4c16f7`,
+  2026-08-06) — see `CHANGELOG.md`. A 2026-08-07 checkpoint pass then fixed
+  staleness the commit itself introduced (see `SESSION_LOG.md`'s latest
+  entry).
 - Add custom favicon (`0b10636`, 2026-08-06).
 - Add Census ACS connector (`90ef269`, 2026-08-01).
 - Add College Scorecard connector (`fd94d85`, 2026-07-31).

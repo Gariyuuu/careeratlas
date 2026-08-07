@@ -33,19 +33,22 @@ schema, the seed script, and `computeConfidence()`.
 ## Current status
 
 - **Branch**: `main`, up to date with `origin/main`.
-- **Working tree**: clean at audit time (no uncommitted or untracked
-  tracked-relevant changes; see `PROJECT_STATE.md` for the exact snapshot).
-- **Latest commit**: `0b10636` — "Add custom favicon matching the app's
-  chart-mark branding" (2026-08-06).
-- 8 commits total, all on `main`, all authored by Gary Wang
+- **Working tree**: clean, re-verified 2026-08-07 (no uncommitted or
+  untracked tracked-relevant changes; see `PROJECT_STATE.md` for the exact
+  snapshot).
+- **Latest commit**: `d4c16f7` — "docs: add full handoff documentation
+  system" (2026-08-06). This is the commit that added this documentation
+  set itself (`0b10636`, the favicon commit, is the second-latest).
+- 9 commits total, all on `main`, all authored by Gary Wang
   (`garywangsmes@gmail.com`), several co-authored by a prior Claude session.
   History shows one large initial build commit followed by five commits each
   adding one real data connector (BLS OEWS, O*NET, Revelio RPLS, College
-  Scorecard, Census ACS) plus a favicon commit.
+  Scorecard, Census ACS), a favicon commit, then this documentation-audit
+  commit.
 - `npm run lint`, `npx tsc --noEmit`, and `npm run test` (Vitest) all pass
-  cleanly as of this audit (see "Testing and verification" below).
-- This audit did not change any application behavior — only documentation
-  files were created/updated.
+  cleanly, re-verified 2026-08-07 (see "Testing and verification" below).
+- No application behavior has been changed by any documentation audit so
+  far — only documentation files have been created/updated/committed.
 
 ## Technology stack
 
@@ -116,7 +119,7 @@ are actually static vs. dynamic before running it.
 ```
 careeratlas/
 ├── prisma/
-│   ├── schema.prisma          # full data model (37 models) — see DATABASE.md
+│   ├── schema.prisma          # full data model (51 models) — see DATABASE.md
 │   ├── seed.ts                 # deterministic demo-data generator (956 lines)
 │   └── migrations/
 │       ├── migration_lock.toml
@@ -285,7 +288,7 @@ gitignored so it never reaches the repo).
 
 ## Database summary
 
-PostgreSQL via Prisma (Neon-hosted in this working copy), 37 models covering
+PostgreSQL via Prisma (Neon-hosted in this working copy), 51 models covering
 taxonomy (Industry → Subindustry → JobFamily → Occupation → Seniority),
 geography, compensation, labor-market stats, education, career transitions,
 data governance (DataSource/DataImportRun/DataQualityCheck/MethodologyVersion),
@@ -361,7 +364,7 @@ deploy. Full detail: `DEPLOYMENT.md`.
 
 ## DO NOT CHANGE WITHOUT REVIEW
 
-- **`prisma/schema.prisma` and `prisma/migrations/`** — 37 interrelated
+- **`prisma/schema.prisma` and `prisma/migrations/`** — 51 interrelated
   models; a careless schema edit can silently break seed data generation,
   every `src/lib/data/*` query, and every scoring function's expected input
   shape. If you must change it, run `npm run db:migrate` against a

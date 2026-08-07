@@ -5,7 +5,8 @@ All paths are relative to `/Users/gariyuu/Projects/careeratlas`.
 ## Database layer
 
 ### `prisma/schema.prisma`
-**Purpose**: the entire data model (37 models). **Calls**: nothing (it's
+**Purpose**: the entire data model (51 models, re-counted 2026-08-07 — see
+`DATABASE.md`). **Calls**: nothing (it's
 config). **Called by**: `prisma generate` (produces `@prisma/client`),
 `prisma migrate *`, every file that imports `@prisma/client`. **When to
 edit**: adding/changing a table, field, relation, or index. **Edit risk**:
