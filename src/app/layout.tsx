@@ -17,9 +17,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://careeratlas-ten.vercel.app";
+const TITLE = "CareerAtlas — Global Career, Salary & Education Tracker";
+const DESCRIPTION =
+  "Explore salaries, career transitions, education ROI, and industry momentum across 50+ industries.";
+
 export const metadata: Metadata = {
-  title: "CareerAtlas — Global Career, Salary & Education Tracker",
-  description: "Explore salaries, career transitions, education ROI, and industry momentum across 50+ industries.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "CareerAtlas",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default async function RootLayout({
