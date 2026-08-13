@@ -1,4 +1,6 @@
 import { listDataSourceStatus, listEconomicIndicators } from "@/lib/data/admin";
+import { isAdminSession } from "@/lib/admin-auth";
+import { sanitizeErrorText } from "@/lib/sanitize";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,11 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = 
 };
 
 export default async function AdminDataStatusPage() {
-  const [sources, indicators] = await Promise.all([listDataSourceStatus(), listEconomicIndicators()]);
+  const [sources, indicators, isAdmin] = await Promise.all([
+    listDataSourceStatus(),
+    listEconomicIndicators(),
+    isAdminSession(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -60,7 +66,7 @@ export default async function AdminDataStatusPage() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant={STATUS_VARIANT[s.status] ?? "secondary"}>{s.status.replace("_", " ")}</Badge>
-                {!s.requiresApiKey && <RunImportButton slug={s.slug} />}
+                {isAdmin && !s.requiresApiKey && <RunImportButton slug={s.slug} />}
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-4 text-sm">
@@ -93,11 +99,13 @@ export default async function AdminDataStatusPage() {
               {s.warnings.length > 0 && (
                 <div className="sm:col-span-4 text-xs text-amber-700 dark:text-amber-400">
                   {s.warnings.map((w, i) => (
-                    <p key={i}>⚠ {w}</p>
+                    <p key={i}>⚠ {sanitizeErrorText(w)}</p>
                   ))}
                 </div>
               )}
-              {s.errorMessage && <p className="sm:col-span-4 text-xs text-red-600 dark:text-red-400">Error: {s.errorMessage}</p>}
+              {s.errorMessage && (
+                <p className="sm:col-span-4 text-xs text-red-600 dark:text-red-400">Error: {sanitizeErrorText(s.errorMessage)}</p>
+              )}
             </CardContent>
           </Card>
         ))}
