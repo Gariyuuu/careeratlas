@@ -150,3 +150,36 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Targeted micro-interaction only — never a blanket `*` reduced-motion rule here.
+ * A blanket `animation-duration: .01ms !important` rule would fast-forward
+ * RunImportButton's Tailwind `animate-spin` to its keyframe end state
+ * (rotate(360deg)), freezing an in-progress loading indicator into a static icon
+ * that looks finished when it isn't. That spinner is a loading indicator and is
+ * correctly exempt from reduced-motion suppression, so it must be left alone.
+ */
+@keyframes fx-bookmark-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.fx-bookmark-pop {
+  animation: fx-bookmark-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-bookmark-pop {
+    animation: none;
+  }
+}
