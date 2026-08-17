@@ -142,7 +142,7 @@ auto-reseeds via Prisma's seed hook.
 - **`EducationRoiScenario`** — **user-scoped** (`userId` nullable), a
   persisted custom ROI scenario. Schema exists but this audit found no
   Server Action or page that writes to this table — the interactive
-  education-compare tool (`education-compare-tool.tsx`) computes ROI
+  education-compare tool (`src/app/(app)/education/compare/education-compare-tool.tsx`) computes ROI
   client-side via `computeEducationRoi()` without persisting scenarios.
   **Likely dead/future-facing schema** — flagged, not removed.
 
@@ -176,7 +176,7 @@ auto-reseeds via Prisma's seed hook.
   `warnings` (JSON string array), `errorMessage`.
 - **`DataQualityCheck`** — per-import-run check results (`checkName`,
   `passed`, `detail`). Currently only one check is written
-  (`rows_imported_gt_zero`, see `run-import.ts`).
+  (`rows_imported_gt_zero`, see `src/lib/providers/run-import.ts`).
 - **`MethodologyVersion`** — human-readable formula/weights descriptions per
   score, rendered on `/methodology`, `@@unique([scoreName, version])`.
 

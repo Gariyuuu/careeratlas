@@ -25,7 +25,7 @@ surveyed via `find`/`ls`, with deep reads targeted at every major system):
 every file under `src/app/` (route handlers, layouts, and a representative
 sample of page/client components across every feature area), every file
 under `src/lib/actions/`, `src/lib/data/admin.ts`, `src/lib/providers/`
-(all 6 connectors + `types.ts`/`registry.ts`/`run-import.ts`),
+(all 6 connectors + `src/lib/providers/types.ts`/`src/lib/providers/registry.ts`/`src/lib/providers/run-import.ts`),
 `src/lib/scoring/confidence.ts`, `src/lib/auth.ts`, `src/lib/prisma.ts`,
 `src/components/layout/nav-items.ts`, `src/components/layout/sidebar.tsx`,
 `src/components/data-status-badge.tsx`, `src/components/theme-provider.tsx`,

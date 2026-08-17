@@ -29,27 +29,27 @@ every generated number.
 **Purpose**: the one and only migration, full initial schema. **When to
 edit**: never by hand — regenerate via `prisma migrate dev` after a schema
 change. **Edit risk**: Very high if hand-edited (drifts from
-`schema.prisma`).
+`prisma/schema.prisma`).
 
 ## Server-side read layer (`src/lib/data/`)
 
 Each file is a thin, feature-scoped set of Prisma-query functions called
-from Server Component `page.tsx` files. None of them mutate data.
+from Server Component route `**/page.tsx` files. None of them mutate data.
 
 | File | Purpose | Edit risk |
 |---|---|---|
-| `salary.ts` | Salary Explorer queries (filters by industry/seniority/country/metro) | Medium |
-| `occupations.ts` | Occupation/role detail + search-adjacent lookups | Medium |
-| `industries.ts` | Industry/subindustry listing | Low |
-| `geography.ts` | Country/region/metro + cost-of-living lookups | Low |
-| `transitions.ts` | Career transition graph/table queries | Medium |
-| `education.ts` | Education ROI / institution / major queries | Medium |
-| `trends.ts` | Industry momentum leaderboard queries | Medium |
-| `dashboard.ts` | Personalized + global dashboard snapshot aggregation | High (touches many models at once) |
-| `compare.ts` | Multi-occupation comparison queries (up to 5) | Medium |
-| `saved.ts` | Saved occupations/comparisons listing for `/saved` | Low |
-| `projection.ts` | Salary projection calculator's data-fetch side | Medium |
-| `admin.ts` | `listDataSourceStatus`, `listEconomicIndicators` for `/admin/data-status` | Low |
+| `src/lib/data/salary.ts` | Salary Explorer queries (filters by industry/seniority/country/metro) | Medium |
+| `src/lib/data/occupations.ts` | Occupation/role detail + search-adjacent lookups | Medium |
+| `src/lib/data/industries.ts` | Industry/subindustry listing | Low |
+| `src/lib/data/geography.ts` | Country/region/metro + cost-of-living lookups | Low |
+| `src/lib/data/transitions.ts` | Career transition graph/table queries | Medium |
+| `src/lib/data/education.ts` | Education ROI / institution / major queries | Medium |
+| `src/lib/data/trends.ts` | Industry momentum leaderboard queries | Medium |
+| `src/lib/data/dashboard.ts` | Personalized + global dashboard snapshot aggregation | High (touches many models at once) |
+| `src/lib/data/compare.ts` | Multi-occupation comparison queries (up to 5) | Medium |
+| `src/lib/data/saved.ts` | Saved occupations/comparisons listing for `/saved` | Low |
+| `src/lib/data/projection.ts` | Salary projection calculator's data-fetch side | Medium |
+| `src/lib/data/admin.ts` | `listDataSourceStatus`, `listEconomicIndicators` for `/admin/data-status` | Low |
 
 **When to edit**: adding a new filter/column to an existing feature, or a
 new read query. **General pattern**: import `prisma` from `@/lib/prisma`,
@@ -63,29 +63,39 @@ applicable) → validate input → Prisma write → `revalidatePath(...)`.
 
 | File | Purpose | Auth required | Edit risk |
 |---|---|---|---|
-| `auth.ts` | `signInAction`, `signUpAction` | No (this IS the auth entry point) | High — touches password hashing and session creation |
-| `account.ts` | `deleteAccountAction` | Yes | High — irreversible delete, cascades via schema `onDelete: Cascade` |
-| `profile.ts` | `upsertProfile` | Yes | Low |
-| `saved-occupations.ts` | `toggleSavedOccupation`, `isOccupationSaved` | Yes (toggle); read-only helper degrades gracefully | Low |
-| `comparisons.ts` | `saveComparison`, `deleteSavedComparison` | Yes | Low |
-| `admin.ts` | `triggerDataImport` | **No — this is the security gap, see SECURITY.md** | High |
+| `src/lib/actions/auth.ts` | `signInAction`, `signUpAction` | No (this IS the auth entry point) | High — touches password hashing and session creation |
+| `src/lib/actions/account.ts` | `deleteAccountAction` | Yes | High — irreversible delete, cascades via schema `onDelete: Cascade` |
+| `src/lib/actions/profile.ts` | `upsertProfile` | Yes | Low |
+| `src/lib/actions/saved-occupations.ts` | `toggleSavedOccupation`, `isOccupationSaved` | Yes (toggle); read-only helper degrades gracefully | Low |
+| `src/lib/actions/comparisons.ts` | `saveComparison`, `deleteSavedComparison` | Yes | Low |
+| `src/lib/actions/admin.ts` | `triggerDataImport` | **Yes, as of `80a7961` (2026-08-13)** — gated via `isAdminSession()` (`src/lib/admin-auth.ts`), fails closed if `ADMIN_EMAILS` is unset; see `SECURITY.md`/`TASKS.md` TASK-001 | High |
+
+## Cross-cutting utilities (`src/lib/`, top level)
+
+Added 2026-08-13 alongside the TASK-001 fix; not previously present when
+this file was first written.
+
+| File | Purpose | Edit risk |
+|---|---|---|
+| `src/lib/admin-auth.ts` | `isAdminSession()` — reads `ADMIN_EMAILS` (comma-separated, case-insensitive), fails closed (empty/unset allowlist = deny all), then checks the current session's email against it | Medium — the entire admin gate lives here |
+| `src/lib/sanitize.ts` | `sanitizeErrorText()` — truncates and redacts `key`/`token`/`secret`/`password=<value>`-shaped substrings before an error/warning string from a data-connector run is rendered on `/admin/data-status` | Low |
 
 ## Data connectors (`src/lib/providers/`)
 
 | File | Purpose | Keyless? | Edit risk |
 |---|---|---|---|
-| `types.ts` | `DataProvider` interface + `runProvider()` orchestration wrapper | — | High — every connector depends on this contract |
-| `registry.ts` | `PROVIDER_REGISTRY` — the list of active connectors | — | Medium — add new connectors here |
-| `run-import.ts` | `runDataImport(slug)`, `runAllConfiguredImports()` — logs to `DataImportRun`/`DataQualityCheck`, updates `DataSource.status` | — | Medium |
-| `bls-provider.ts` | BLS CES avg. hourly earnings (`bls-ces`) | Yes | Low |
-| `bls-oews-provider.ts` | BLS OEWS per-occupation wages (`bls-oews`), 27 occupations mapped | Yes | Medium |
-| `onet-provider.ts` | O*NET education requirements + alternate titles (`onet`) | Yes | Medium |
-| `revelio-rpls-provider.ts` | Revelio public posting-growth trend (`revelio-rpls`) | Yes | Medium |
-| `census-acs-provider.ts` | Census ACS median earnings by education level (`census-acs`) | No — needs `CENSUS_API_KEY` | Medium |
-| `college-scorecard-provider.ts` | College Scorecard per-institution tuition (`college-scorecard`) | No — needs `COLLEGE_SCORECARD_API_KEY` | Medium |
+| `src/lib/providers/types.ts` | `DataProvider` interface + `runProvider()` orchestration wrapper | — | High — every connector depends on this contract |
+| `src/lib/providers/registry.ts` | `PROVIDER_REGISTRY` — the list of active connectors | — | Medium — add new connectors here |
+| `src/lib/providers/run-import.ts` | `runDataImport(slug)`, `runAllConfiguredImports()` — logs to `DataImportRun`/`DataQualityCheck`, updates `DataSource.status` | — | Medium |
+| `src/lib/providers/bls-provider.ts` | BLS CES avg. hourly earnings (`bls-ces`) | Yes | Low |
+| `src/lib/providers/bls-oews-provider.ts` | BLS OEWS per-occupation wages (`bls-oews`), 27 occupations mapped | Yes | Medium |
+| `src/lib/providers/onet-provider.ts` | O*NET education requirements + alternate titles (`onet`) | Yes | Medium |
+| `src/lib/providers/revelio-rpls-provider.ts` | Revelio public posting-growth trend (`revelio-rpls`) | Yes | Medium |
+| `src/lib/providers/census-acs-provider.ts` | Census ACS median earnings by education level (`census-acs`) | No — needs `CENSUS_API_KEY` | Medium |
+| `src/lib/providers/college-scorecard-provider.ts` | College Scorecard per-institution tuition (`college-scorecard`) | No — needs `COLLEGE_SCORECARD_API_KEY` | Medium |
 
 **When to edit**: adding a new external data source. Follow the existing
-pattern exactly; register in `registry.ts`; add a `DataSource` row in
+pattern exactly; register in `src/lib/providers/registry.ts`; add a `DataSource` row in
 `src/lib/seed-data/data-sources.ts`; add the env var to `.env.example` if
 needed.
 
@@ -96,16 +106,16 @@ code. `*.test.ts` files are co-located.
 
 | File | Score | Has test? |
 |---|---|---|
-| `projection.ts` | Salary Projection (conservative/expected/aggressive × 1/3/5/10yr) | Yes |
-| `cost-of-living.ts` | Cost-of-living adjustment | Yes |
-| `transition-score.ts` | Transition compatibility/difficulty/category | Yes |
-| `momentum-score.ts` | Job Market Momentum Score (9 weighted factors) | Yes |
-| `education-roi.ts` | Education ROI (net cost, break-even, N-yr return) | Yes |
-| `accessibility-score.ts` | Accessibility Score | **No** |
-| `salary-opportunity-score.ts` | Salary Opportunity Score | **No** |
-| `career-value-score.ts` | Combined Career Value Score | **No** |
-| `confidence.ts` | Confidence scoring, gated by `dataStatus` | Yes |
-| `percentile-rank.ts` | Where a salary falls within a role's distribution | Yes |
+| `src/lib/scoring/projection.ts` | Salary Projection (conservative/expected/aggressive × 1/3/5/10yr) | Yes |
+| `src/lib/scoring/cost-of-living.ts` | Cost-of-living adjustment | Yes |
+| `src/lib/scoring/transition-score.ts` | Transition compatibility/difficulty/category | Yes |
+| `src/lib/scoring/momentum-score.ts` | Job Market Momentum Score (9 weighted factors) | Yes |
+| `src/lib/scoring/education-roi.ts` | Education ROI (net cost, break-even, N-yr return) | Yes |
+| `src/lib/scoring/accessibility-score.ts` | Accessibility Score | **No** |
+| `src/lib/scoring/salary-opportunity-score.ts` | Salary Opportunity Score | **No** |
+| `src/lib/scoring/career-value-score.ts` | Combined Career Value Score | **No** |
+| `src/lib/scoring/confidence.ts` | Confidence scoring, gated by `dataStatus` | Yes |
+| `src/lib/scoring/percentile-rank.ts` | Where a salary falls within a role's distribution | Yes |
 
 **When to edit**: changing a formula. **Edit risk**: High — these are
 user-facing "transparent methodology" numbers described on `/methodology`
@@ -116,19 +126,19 @@ numbers app-wide. Always run `npm run test` before and after.
 
 | File | Purpose |
 |---|---|
-| `industries.ts` | `INDUSTRIES` — the 50-industry list with `category` |
-| `featured-taxonomy.ts` | Hand-curated deep taxonomy for 8 flagship industries |
-| `generic-taxonomy.ts` | Programmatic archetype-template taxonomy for all other industries |
-| `taxonomy-types.ts` | Shared taxonomy TypeScript types + `SENIORITY_TRACK_LEVELS` |
-| `seniority-levels.ts` | `SENIORITY_LEVELS`, rank 0 (Intern) – 13 (C-Suite/Partner) |
-| `skills.ts` | `UNIQUE_SKILLS` catalog |
-| `geography.ts` | `COUNTRIES`, `REGIONS`, `METRO_AREAS` |
+| `src/lib/seed-data/industries.ts` | `INDUSTRIES` — the 50-industry list with `category` |
+| `src/lib/seed-data/featured-taxonomy.ts` | Hand-curated deep taxonomy for 8 flagship industries |
+| `src/lib/seed-data/generic-taxonomy.ts` | Programmatic archetype-template taxonomy for all other industries |
+| `src/lib/seed-data/taxonomy-types.ts` | Shared taxonomy TypeScript types + `SENIORITY_TRACK_LEVELS` |
+| `src/lib/seed-data/seniority-levels.ts` | `SENIORITY_LEVELS`, rank 0 (Intern) – 13 (C-Suite/Partner) |
+| `src/lib/seed-data/skills.ts` | `UNIQUE_SKILLS` catalog |
+| `src/lib/seed-data/geography.ts` | `COUNTRIES`, `REGIONS`, `METRO_AREAS` |
 | `education.ts` | `MAJORS`, `INSTITUTIONS` |
-| `data-sources.ts` | `DATA_SOURCES` — every `DataSource` row, real + planned |
+| `src/lib/seed-data/data-sources.ts` | `DATA_SOURCES` — every `DataSource` row, real + planned |
 | `methodology.ts` | `METHODOLOGY_VERSIONS` — human-readable formula descriptions for `/methodology` |
-| `salary-model.ts` | Base salary curves, tier/company-size/work-arrangement multipliers |
-| `bls-occupation-mapping.ts` | Maps CareerAtlas occupation slugs → BLS SOC codes |
-| `rng.ts` | `createRng`, `rngSeeded`, `rngInt`, `rngRange`, `rngPick` — deterministic PRNG helpers |
+| `src/lib/seed-data/salary-model.ts` | Base salary curves, tier/company-size/work-arrangement multipliers |
+| `src/lib/seed-data/bls-occupation-mapping.ts` | Maps CareerAtlas occupation slugs → BLS SOC codes |
+| `src/lib/seed-data/rng.ts` | `createRng`, `rngSeeded`, `rngInt`, `rngRange`, `rngPick` — deterministic PRNG helpers |
 
 **When to edit**: adding a country/industry/major/skill/institution, per the
 `README.md` "Adding a new country" / "Adding an industry or occupation"
@@ -139,8 +149,16 @@ sections. **Edit risk**: Medium — always re-run `npm run db:seed` (or
 
 ### `src/app/layout.tsx`
 Root layout: fonts, `ThemeProvider`, `SessionProvider` (seeded from
-server-side `auth()`), `TooltipProvider`, `Toaster`. **Edit risk**: High —
-global, affects every page.
+server-side `auth()`), `TooltipProvider`, `Toaster`. As of `fb63183`
+(2026-08-13) also exports the site's `Metadata` (OpenGraph/Twitter card
+fields). **Edit risk**: High — global, affects every page.
+
+### `src/app/opengraph-image.tsx`, `src/app/robots.ts`, `src/app/sitemap.ts`
+Added `fb63183` (2026-08-13), not present when this file was first written.
+Next.js special-file conventions: `src/app/opengraph-image.tsx` generates the
+`/opengraph-image` social-preview image at request time; `src/app/robots.ts` and
+`src/app/sitemap.ts` generate `/robots.txt` and `/sitemap.xml`. All three are static
+content, no auth, no DB reads. **Edit risk**: Low.
 
 ### `src/app/page.tsx`
 Public landing page. Queries `prisma` directly for headline stats (the one
@@ -157,13 +175,13 @@ education, trends, compare, roles, saved, profile, settings, methodology,
 data-sources, admin/data-status, projection)
 Each is a Server Component composing one or more `src/lib/data/*` reads with
 a colocated client component for interactive filters/forms (e.g.
-`salary-filters.tsx`, `compare-selector.tsx`, `education-compare-tool.tsx`,
-`projection-calculator.tsx`, `role-filters.tsx`, `profile-form.tsx`,
-`transition-table.tsx`, `momentum-leaderboard.tsx`,
-`role-salary-section.tsx`). **Edit risk**: Low–Medium, scoped to that
+`src/app/(app)/salary/salary-filters.tsx`, `src/app/(app)/compare/compare-selector.tsx`, `src/app/(app)/education/compare/education-compare-tool.tsx`,
+`src/app/(app)/projection/projection-calculator.tsx`, `src/app/(app)/roles/role-filters.tsx`, `src/app/(app)/profile/profile-form.tsx`,
+`src/app/(app)/transitions/transition-table.tsx`, `src/app/(app)/trends/momentum-leaderboard.tsx`,
+`src/app/(app)/roles/[role]/role-salary-section.tsx`). **Edit risk**: Low–Medium, scoped to that
 feature.
 
-### `src/app/(auth)/sign-in/page.tsx`, `sign-up/page.tsx`, `(auth)/layout.tsx`
+### `src/app/(auth)/sign-in/page.tsx`, `src/app/(auth)/sign-up/page.tsx`, `(auth)/layout.tsx`
 Minimal-layout auth pages, forms bound to `signInAction`/`signUpAction` via
 `useActionState` (implied by the `_prevState`/`FormData` signature in
 `src/lib/actions/auth.ts`). **Edit risk**: High (auth-adjacent).
@@ -192,29 +210,33 @@ in-memory scan" approach if the occupation catalog grows substantially.
 ### `src/components/ui/*` (shadcn/ui primitives)
 Generated/customized via `shadcn` CLI per `components.json`. **Edit risk**:
 Low individually, but changes ripple visually across the whole app — check
-multiple pages after editing a shared primitive like `button.tsx` or
-`card.tsx`.
+multiple pages after editing a shared primitive like `src/components/ui/button.tsx` or
+`src/components/ui/card.tsx`.
 
 ### `src/components/layout/*`
-`sidebar.tsx`, `topbar.tsx`, `mobile-nav.tsx`, `nav-items.ts` (the single
+`src/components/layout/sidebar.tsx`, `src/components/layout/topbar.tsx`, `src/components/layout/mobile-nav.tsx`, `src/components/layout/nav-items.ts` (the single
 source of truth for the nav menu — edit here to add/remove/reorder a nav
-item), `global-search.tsx` (client component hitting `/api/search`),
-`demo-data-banner.tsx`. **Edit risk**: Medium — global chrome.
+item), `src/components/layout/global-search.tsx` (client component hitting `/api/search`),
+`src/components/layout/demo-data-banner.tsx`. **Edit risk**: Medium — global chrome.
 
 ### `src/components/charts/*`
-`comparison-bar-chart.tsx`, `comparison-radar-chart.tsx`,
-`salary-distribution-chart.tsx`, `salary-trend-chart.tsx` — Recharts
+`src/components/charts/comparison-bar-chart.tsx`, `src/components/charts/comparison-radar-chart.tsx`,
+`src/components/charts/salary-distribution-chart.tsx`, `src/components/charts/salary-trend-chart.tsx` — Recharts
 wrappers. **Edit risk**: Low, presentation only.
 
 ### Other top-level components
-`data-status-badge.tsx` (renders the reported/estimated/forecast/simulated
+`src/components/data-status-badge.tsx` (renders the reported/estimated/forecast/simulated
 badge — central to the app's core "never overstate confidence" principle,
-treat as **high** edit risk despite its small size), `data-table.tsx`
-(TanStack Table wrapper), `role-picker.tsx`, `run-import-button.tsx`,
-`save-career-button.tsx`, `save-comparison-button.tsx`,
-`delete-account-button.tsx`, `page-header.tsx`, `session-provider.tsx`,
-`theme-provider.tsx`, `theme-settings.tsx`, `theme-toggle.tsx`,
-`transition-graph.tsx`.
+treat as **high** edit risk despite its small size), `src/components/data-table.tsx`
+(TanStack Table wrapper), `src/components/role-picker.tsx`, `src/components/run-import-button.tsx`,
+`src/components/save-career-button.tsx` (as of `fb450a0`, 2026-08-15,
+triggers a CSS "pop" animation defined in `src/app/globals.css` on save — cosmetic
+only), `src/components/save-comparison-button.tsx`,
+`src/components/delete-account-button.tsx` (wraps the delete action in an
+`AlertDialog` confirmation — see `TASKS.md` TASK-006, confirmed present,
+not a gap), `src/components/page-header.tsx`, `src/components/session-provider.tsx`,
+`src/components/theme-provider.tsx`, `src/components/theme-settings.tsx`, `src/components/theme-toggle.tsx`,
+`src/components/transition-graph.tsx`.
 
 ## Configuration files
 
@@ -233,18 +255,18 @@ treat as **high** edit risk despite its small size), `data-table.tsx`
 ## Where to make common changes
 
 - **Add a new page/feature under the main app shell**: create
-  `src/app/(app)/<name>/page.tsx`, add a read function to
-  `src/lib/data/<name>.ts` if it needs new queries, add a nav entry to
+  `src/app/(app)/<route-name>/page.tsx`, add a read function to
+  `src/lib/data/<route-name>.ts` if it needs new queries, add a nav entry to
   `src/components/layout/nav-items.ts`. Decide explicitly whether it needs
   an `auth()` gate.
 - **Add a new form/mutation**: add a function to the relevant
   `src/lib/actions/*.ts` (or a new file, following the existing
   `"use server"` + `auth()` + validate + `revalidatePath` pattern).
 - **Add a new external data source**: `src/lib/providers/<slug>-provider.ts`
-  implementing `DataProvider`, register in `registry.ts`, add a row to
+  implementing `DataProvider`, register in `src/lib/providers/registry.ts`, add a row to
   `src/lib/seed-data/data-sources.ts`, document any new env var in
   `.env.example`.
-- **Add/change a scoring formula**: edit `src/lib/scoring/<name>.ts`,
+- **Add/change a scoring formula**: edit `src/lib/scoring/<score-name>.ts`,
   update/add its `*.test.ts`, and check whether `prisma/seed.ts` and the
   `/methodology` page's `METHODOLOGY_VERSIONS` description need updating too.
 - **Add a new industry/country/major/skill**: extend the relevant file in

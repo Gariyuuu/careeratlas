@@ -32,23 +32,33 @@ schema, the seed script, and `computeConfidence()`.
 
 ## Current status
 
-- **Branch**: `main`, up to date with `origin/main`.
-- **Working tree**: clean, re-verified 2026-08-07 (no uncommitted or
-  untracked tracked-relevant changes; see `PROJECT_STATE.md` for the exact
-  snapshot).
-- **Latest commit**: `d4c16f7` — "docs: add full handoff documentation
-  system" (2026-08-06). This is the commit that added this documentation
-  set itself (`0b10636`, the favicon commit, is the second-latest).
-- 9 commits total, all on `main`, all authored by Gary Wang
-  (`garywangsmes@gmail.com`), several co-authored by a prior Claude session.
-  History shows one large initial build commit followed by five commits each
-  adding one real data connector (BLS OEWS, O*NET, Revelio RPLS, College
-  Scorecard, Census ACS), a favicon commit, then this documentation-audit
-  commit.
-- `npm run lint`, `npx tsc --noEmit`, and `npm run test` (Vitest) all pass
-  cleanly, re-verified 2026-08-07 (see "Testing and verification" below).
-- No application behavior has been changed by any documentation audit so
-  far — only documentation files have been created/updated/committed.
+- **Current active task:** `T-005` (maps to `TASKS.md` TASK-005 — this
+  repo's backlog uses `TASK-XXX` numbering; `T-005` is the stable
+  cross-file ID for the repo-memory system). Fix "Run now" throwing an
+  unhandled error for four seeded-but-unimplemented data sources
+  (World Bank/OECD/ILOSTAT/Eurostat). `TASK-001` (the admin auth gap) is
+  **closed** — see below.
+- **Branch**: `main`, up to date with `origin/main` as of the last
+  verification (2026-08-17 onboarding pass; re-confirm `git status`
+  yourself).
+- **Working tree**: clean, re-verified 2026-08-17.
+- **Latest commit**: `63a5a6f` — "Merge branch 'chore/polish' into main"
+  (2026-08-16). 16 commits total on `main`.
+- **Since the last doc pass** (`d4c16f7`, 2026-08-06/07), 6 more commits
+  landed, all real product work (not by the documentation audit):
+  `80a7961` fixed TASK-001 (gated `triggerDataImport` behind an
+  `ADMIN_EMAILS` allowlist via new `src/lib/admin-auth.ts` +
+  `src/lib/sanitize.ts`; `/admin/data-status` itself stays intentionally
+  public); `fb63183` added OpenGraph/Twitter metadata, a generated
+  `opengraph-image`, `src/app/robots.ts`, and `src/app/sitemap.ts`; `fb450a0` added a
+  cosmetic CSS "pop" animation to the save-career button; three merge
+  commits. Full detail: `CHANGELOG.md`, `SECURITY.md`, `TASKS.md`.
+- `npm run lint` (1 harmless warning), `npx tsc --noEmit` (0 errors), and
+  `npm run test` (34/34, Vitest) all pass cleanly, re-verified 2026-08-17.
+- This 2026-08-17 pass is documentation-only (verifying and correcting the
+  doc set against the real repo state) — no application behavior was
+  changed by it. The 6 commits listed above were real prior product work,
+  not part of any documentation audit.
 
 ## Technology stack
 
@@ -60,7 +70,7 @@ audit time — do not assume newer/older versions without re-checking.
 | Framework | Next.js (App Router) | `16.2.11` |
 | Language | TypeScript | `5.9.3` (package.json pins `^5`) |
 | UI library | React / React DOM | `19.2.4` |
-| Styling | Tailwind CSS | `^4` (v4, CSS-first config via `@theme` in `globals.css`) |
+| Styling | Tailwind CSS | `^4` (v4, CSS-first config via `@theme` in `src/app/globals.css`) |
 | Component system | shadcn/ui | style `radix-nova`, generator `shadcn@4.14.1`, primitives via `radix-ui@1.6.7` + individual `@radix-ui/react-*` packages |
 | ORM / DB | Prisma / `@prisma/client` | `6.19.3` |
 | Database | PostgreSQL (Neon-hosted in this environment's `.env`) | schema also SQLite-portable, see `DATABASE.md` |
@@ -180,7 +190,7 @@ route-level middleware). Full detail with a diagram is in `ARCHITECTURE.md`.
 **Verified (directly observed as consistent across the codebase):**
 - Server Components read data via functions in `src/lib/data/*`; they do not
   call `prisma` directly inline in page files (occasional exceptions: root
-  `layout.tsx`'s session read via `auth()`, and `page.tsx`'s inline
+  `src/app/layout.tsx`'s session read via `auth()`, and `src/app/page.tsx`'s inline
   `prisma.industry.count()` etc. for landing-page stats).
 - Mutations are Server Actions in `src/lib/actions/*.ts`, each file starting
   with `"use server"`, each function calling `auth()` first if it requires a
@@ -194,8 +204,13 @@ route-level middleware). Full detail with a diagram is in `ARCHITECTURE.md`.
   string field; enum-like fields are plain `String` (not Prisma native enums)
   by deliberate design (see `DECISIONS.md`) for SQLite portability.
 - IDs are `cuid()`; no auto-increment integer IDs anywhere in the schema.
-- No `console.log`/`console.error`/`console.warn` found in `src/` (repo-wide
-  grep during this audit returned zero matches in application code).
+- **[Outdated]** Previously "no `console.*` found in `src/`" — as of
+  `80a7961` (2026-08-13) there is exactly **one**: `triggerDataImport`
+  (`src/lib/actions/admin.ts`) calls `console.warn` on an unauthorized-access
+  denial (logs only the requested `slug`, no secrets). This was a deliberate,
+  documented exception, not a drift from the convention — treat any
+  *additional* `console.*` call as worth questioning, but this one is
+  intentional (see `SECURITY.md`).
 - No `as any`, `@ts-ignore`, or `@ts-expect-error` found anywhere in `src/`.
 - No skipped/`.only` tests found in `src/` or `e2e/`.
 - Only two `eslint-disable` comments exist in the whole codebase, both
@@ -215,7 +230,7 @@ written down elsewhere):**
 - Keep new Server Actions consistent with the existing pattern: `auth()`
   check → Zod-or-manual validation → Prisma call → `revalidatePath`.
 - Any new external data connector should follow `src/lib/providers/types.ts`'s
-  `DataProvider` interface exactly, as `bls-provider.ts`/`census-acs-provider.ts`/etc.
+  `DataProvider` interface exactly, as `src/lib/providers/bls-provider.ts`/`src/lib/providers/census-acs-provider.ts`/etc.
   already do, and must be registered in `src/lib/providers/registry.ts` and
   given a row in `src/lib/seed-data/data-sources.ts`.
 
@@ -256,6 +271,7 @@ failing).
 | `DATABASE_URL` | **Yes** | Server only | PostgreSQL connection string (Prisma `datasource.url`) | `postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres` |
 | `AUTH_SECRET` | Production only (NextAuth warns/fails without it in prod) | Server only | NextAuth JWT/session signing secret | `openssl rand -base64 32` output, e.g. a random 44-char base64 string — never reuse the repo's dev placeholder in production |
 | `CRON_SECRET` | No | Server only | If set, `/api/cron/update-trends` requires `Authorization: Bearer <value>`; if unset, the endpoint is **unauthenticated** | any random string |
+| `ADMIN_EMAILS` | No, but **fails closed if unset** | Server only | Added `80a7961` (2026-08-13). Comma-separated, case-insensitive list of emails allowed to trigger a manual connector run (`triggerDataImport`) from `/admin/data-status`; unset/empty means no one can trigger a run, not "allow all" | `you@example.com,other-admin@example.com` |
 | `BLS_API_KEY` | No | Server only | Raises the BLS public API's daily rate limit for `bls-ces` and `bls-oews` connectors; both connectors work without it (`isConfigured()` always returns `true`) | free key from bls.gov/developers |
 | `CENSUS_API_KEY` | No | Server only | Required for the `census-acs` connector to run (`isConfigured()` returns `!!process.env.CENSUS_API_KEY`) | free key from census.gov/developers |
 | `COLLEGE_SCORECARD_API_KEY` | No | Server only | Required for the `college-scorecard` connector to run | free key from api.data.gov |
@@ -270,6 +286,16 @@ is now **stale**. Both connectors were implemented in commits `fd94d85` and
 scope per the task instructions — only the 17 documentation files listed were
 created/updated), but any future session should fix this discrepancy in
 `README.md` too.
+
+**Same staleness found in `.env.example` itself (2026-08-17 re-verify):**
+`.env.example`'s inline comments for `CENSUS_API_KEY` and
+`COLLEGE_SCORECARD_API_KEY` still read "Not yet wired to a connector —
+reserved for a future ... importer" — this predates both connector
+implementations (confirmed via `git log --follow -p -- .env.example`, the
+wording is original to the file, never updated across `fd94d85`/`90ef269`)
+and is now inaccurate for the same reason as the README. Not fixed here
+(this is a config file, not a memory doc, and this pass is documentation-
+only) — tracked as `TASKS.md` TASK-007.
 
 **Leftover/unused env vars found in `.env.local`** (not in `.env.example`,
 not referenced anywhere in `src/`): `DATABASE_URL_UNPOOLED`,
@@ -317,16 +343,16 @@ NO auth or role check at all** — this is a real gap, flagged in detail in
   (auth-gated), `GET /api/cron/update-trends` (optionally bearer-protected
   via `CRON_SECRET`), NextAuth's `/api/auth/[...nextauth]` catch-all.
 - External data connectors (`src/lib/providers/`, registered in
-  `registry.ts`): `bls-provider.ts` (BLS CES avg. hourly earnings, keyless),
-  `bls-oews-provider.ts` (BLS OEWS occupational wages, keyless),
-  `onet-provider.ts` (O*NET education/alias data, keyless),
-  `revelio-rpls-provider.ts` (Revelio public labor stats, keyless),
-  `college-scorecard-provider.ts` (requires `COLLEGE_SCORECARD_API_KEY`),
-  `census-acs-provider.ts` (requires `CENSUS_API_KEY`). Four of six run with
+  `src/lib/providers/registry.ts`): `src/lib/providers/bls-provider.ts` (BLS CES avg. hourly earnings, keyless),
+  `src/lib/providers/bls-oews-provider.ts` (BLS OEWS occupational wages, keyless),
+  `src/lib/providers/onet-provider.ts` (O*NET education/alias data, keyless),
+  `src/lib/providers/revelio-rpls-provider.ts` (Revelio public labor stats, keyless),
+  `src/lib/providers/college-scorecard-provider.ts` (requires `COLLEGE_SCORECARD_API_KEY`),
+  `src/lib/providers/census-acs-provider.ts` (requires `CENSUS_API_KEY`). Four of six run with
   **zero configuration** — meaning the daily Vercel Cron job and the
   unauthenticated admin "Run now" button both actively call external BLS,
   O*NET, and Revelio APIs by default.
-- Seeded-but-not-implemented `DataSource` rows (in `data-sources.ts`, no
+- Seeded-but-not-implemented `DataSource` rows (in `src/lib/seed-data/data-sources.ts`, no
   matching file in `providers/`): World Bank, OECD, ILOSTAT, Eurostat —
   planned only, not connectors.
 - No payment/storage integrations exist in this repo.
@@ -338,12 +364,12 @@ NO auth or role check at all** — this is a real gap, flagged in detail in
   (`npm run test`, verified this audit). Covers `confidence`,
   `cost-of-living`, `education-roi`, `momentum-score`, `percentile-rank`,
   `projection`, `transition-score`. **No tests exist** for
-  `accessibility-score.ts`, `career-value-score.ts`, or
-  `salary-opportunity-score.ts`.
+  `src/lib/scoring/accessibility-score.ts`, `src/lib/scoring/career-value-score.ts`, or
+  `src/lib/scoring/salary-opportunity-score.ts`.
 - E2E: Playwright, `e2e/*.spec.ts`, 5 files (search-and-role, save-career,
   education, projection, transitions-and-compare). **Not run this audit** —
   `playwright.config.ts`'s `webServer` runs `npm run start` against whatever
-  `DATABASE_URL` is configured, and `save-career.spec.ts` signs up a new
+  `DATABASE_URL` is configured, and `e2e/save-career.spec.ts` signs up a new
   real user via the signup flow, which would write to the live Neon database
   in this working copy. Do not run `test:e2e` against a real/shared database.
 - Lint: ESLint via `eslint.config.mjs` (`eslint-config-next` core-web-vitals
@@ -387,36 +413,45 @@ deploy. Full detail: `DEPLOYMENT.md`.
   documentation file.
 - **`vercel.json` cron schedule and `CRON_SECRET` handling** — changing this
   affects production data-refresh cadence and the admin endpoint's exposure.
-- **`src/app/api/cron/update-trends/route.ts` and `/admin/data-status`
-  auth posture** — see the unresolved security gap noted above; don't
-  "quietly" add auth here without documenting it as an intentional fix (see
-  `TASKS.md` for the tracked item).
+- **`src/app/api/cron/update-trends/route.ts` and `/admin/data-status`/
+  `triggerDataImport` auth posture** — `triggerDataImport` is now gated by
+  `ADMIN_EMAILS` (`src/lib/admin-auth.ts`, fixed `80a7961`, TASK-001
+  closed); `/admin/data-status` itself and the cron route remain
+  intentionally as documented. Don't "quietly" change any of this posture
+  further without documenting it (update `SECURITY.md`/`TASKS.md` in the
+  same session).
 
 ## Known issues
 
-1. **`/admin/data-status` has no authentication or authorization check** —
-   anyone with the URL can view connector internals and trigger
-   `triggerDataImport` (a Server Action with zero `auth()` call), which
-   makes real outbound calls to BLS/O*NET/Revelio (and Census/College
-   Scorecard if those keys are set). See `SECURITY.md` and `TASKS.md` TASK-001.
+1. ~~`/admin/data-status` has no authentication or authorization check`~~ —
+   **fixed `80a7961` (2026-08-13), TASK-001 closed.** `triggerDataImport`
+   now requires `isAdminSession()` (`ADMIN_EMAILS` allowlist, fails
+   closed); `/admin/data-status` itself remains intentionally public by
+   product decision. See `SECURITY.md`.
 2. **`README.md`'s "not implemented" list is stale** — it still describes
    Census ACS and College Scorecard as unimplemented; both were completed in
-   later commits. Not fixed by this audit (out of the listed doc files) — see
-   `TASKS.md`.
+   earlier commits (`fd94d85`, `90ef269`). Still not fixed (documentation-only
+   passes so far have not edited `README.md`) — see `TASKS.md` TASK-002.
 3. **3 of 10 scoring functions have no unit tests**
-   (`accessibility-score.ts`, `career-value-score.ts`,
-   `salary-opportunity-score.ts`) — see `TESTING.md`.
+   (`src/lib/scoring/accessibility-score.ts`, `src/lib/scoring/career-value-score.ts`,
+   `src/lib/scoring/salary-opportunity-score.ts`) — still open, re-verified
+   2026-08-17 — see `TESTING.md` and `TASKS.md` TASK-003.
 4. **E2E suite is unverified in this environment** — never run against the
    live `DATABASE_URL` in `.env`/`.env.local`; needs a disposable database.
 5. **No `middleware.ts` / centralized route protection** — every
-   auth-dependent page re-implements its own `auth()` check inline. Works
-   correctly everywhere it was checked in this audit, but there's no single
-   place to audit for "is this route protected" — a new page could easily
-   forget the check (as `/admin/data-status` did).
+   auth-dependent page re-implements its own `auth()` check inline. The
+   TASK-001 fix added one more per-action check rather than a centralized
+   gate, so this structural risk remains — still open.
 6. **`.env.local` carries ~17 unused Vercel/Neon-integration env vars** not
    referenced anywhere in `src/` — harmless, but dead weight (see
-   "Environment setup").
-7. **No `engines` field, `.nvmrc`, or `.node-version`** pins a Node.js
+   "Environment setup") — still open, see `TASKS.md` TASK-004.
+7. **`.env.example`'s Census ACS/College Scorecard comments are stale**
+   (added 2026-08-17 finding) — see "Environment setup" above and
+   `TASKS.md` TASK-007.
+8. **Clicking "Run now" for a seeded-but-unregistered data source**
+   (World Bank/OECD/ILOSTAT/Eurostat) still throws an unhandled error —
+   unchanged, see `TASKS.md` TASK-005.
+9. **No `engines` field, `.nvmrc`, or `.node-version`** pins a Node.js
    version for this project — Vercel will use its own default/inferred
    runtime, which may not match the `v26.3.0` observed locally.
 
@@ -449,7 +484,7 @@ deploy. Full detail: `DEPLOYMENT.md`.
    `computeConfidence()`.
 9. When adding a new external data connector, follow the existing
    `DataProvider` pattern exactly (`src/lib/providers/types.ts`) and update
-   `registry.ts` + `data-sources.ts` + `.env.example` together.
+   `src/lib/providers/registry.ts` + `src/lib/seed-data/data-sources.ts` + `.env.example` together.
 10. When adding a new page under `src/app/(app)/`, decide explicitly whether
     it needs an `auth()` gate — don't assume the layout protects it (it
     doesn't).

@@ -71,7 +71,7 @@ flowchart TB
   `prisma.careerTransition.count()` directly (the one place outside
   `src/lib/data/` that calls Prisma inline) to show live stats.
 - `src/app/(app)/` — route group for the main authenticated-optional app
-  shell. `layout.tsx` here renders `Sidebar` + `Topbar` + `DemoDataBanner` +
+  shell. `src/app/(app)/layout.tsx` here renders `Sidebar` + `Topbar` + `DemoDataBanner` +
   `MobileNav` around every page in this group. Contains all the feature
   pages: dashboard, careers, salary, transitions, education, trends,
   compare, roles, saved, profile, settings, methodology, data-sources,
@@ -80,13 +80,13 @@ flowchart TB
   layout with no sidebar.
 - `src/components/ui/` — shadcn/ui primitives (Radix-based).
 - `src/components/layout/` — Sidebar, Topbar, MobileNav, global command-K
-  search (`global-search.tsx`), `demo-data-banner.tsx`.
+  search (`src/components/layout/global-search.tsx`), `src/components/layout/demo-data-banner.tsx`.
 - `src/components/charts/` — Recharts wrapper components (bar, radar,
   distribution, trend).
 - Most page-level interactivity (filters, selectors, forms) lives in
   colocated `*.tsx` client components inside each route's folder (e.g.
   `src/app/(app)/salary/salary-filters.tsx`), imported into the route's
-  Server Component `page.tsx`.
+  Server Component route's the route's `**/page.tsx`.
 
 ## Backend structure
 
@@ -94,21 +94,21 @@ There is no separate backend — "backend" here means the server-only code
 that runs inside the same Next.js app:
 
 - `src/lib/data/*.ts` — read-only query functions, one file per feature area
-  (`salary.ts`, `occupations.ts`, `transitions.ts`, `education.ts`,
-  `trends.ts`, `dashboard.ts`, `compare.ts`, `geography.ts`, `industries.ts`,
-  `projection.ts`, `saved.ts`, `admin.ts`). Called from Server Component
-  `page.tsx` files.
+  (`src/lib/data/salary.ts`, `src/lib/data/occupations.ts`, `src/lib/data/transitions.ts`, `src/lib/data/education.ts`,
+  `src/lib/data/trends.ts`, `src/lib/data/dashboard.ts`, `src/lib/data/compare.ts`, `src/lib/data/geography.ts`, `src/lib/data/industries.ts`,
+  `src/lib/data/projection.ts`, `src/lib/data/saved.ts`, `src/lib/data/admin.ts`). Called from Server Component
+  `**/page.tsx` (Server Component) files.
 - `src/lib/actions/*.ts` — Server Actions (`"use server"`), the only
-  write path for user-initiated mutations: `auth.ts` (sign in/up),
-  `account.ts` (delete account), `profile.ts` (upsert profile),
-  `saved-occupations.ts` (toggle save), `comparisons.ts` (save/delete a
-  comparison), `admin.ts` (`triggerDataImport`).
+  write path for user-initiated mutations: `src/lib/actions/auth.ts` (sign in/up),
+  `src/lib/actions/account.ts` (delete account), `src/lib/actions/profile.ts` (upsert profile),
+  `src/lib/actions/saved-occupations.ts` (toggle save), `src/lib/actions/comparisons.ts` (save/delete a
+  comparison), `src/lib/actions/admin.ts` (`triggerDataImport`).
 - `src/app/api/*/route.ts` — plain route handlers for things that aren't
   page renders or form actions: `search` (GET, JSON), `export/saved` (GET,
   CSV download), `cron/update-trends` (GET, triggers all configured
   connectors), `auth/[...nextauth]` (NextAuth's own handler, all methods).
 - `src/lib/providers/*.ts` — the `DataProvider` connector implementations
-  plus `registry.ts` (the list of active connectors) and `run-import.ts`
+  plus `src/lib/providers/registry.ts` (the list of active connectors) and `src/lib/providers/run-import.ts`
   (`runDataImport`/`runAllConfiguredImports`, the orchestration layer that
   logs every run to `DataImportRun`/`DataQualityCheck`).
 - `src/lib/scoring/*.ts` — pure functions with no I/O, imported by both
@@ -131,8 +131,8 @@ that runs inside the same Next.js app:
 4. `auth()` may also be called (e.g. to check `isOccupationSaved`) — this
    reads the NextAuth JWT from the request's cookies.
 5. The page renders server-side (React Server Components), streaming HTML
-   plus any client components (e.g. `role-salary-section.tsx` for the
-   seniority-level selector, `save-career-button.tsx`) that hydrate in the
+   plus any client components (e.g. `src/app/(app)/roles/[role]/role-salary-section.tsx` for the
+   seniority-level selector, `src/components/save-career-button.tsx`) that hydrate in the
    browser.
 6. User interactions on client components either call a Server Action
    directly (e.g. clicking "Save career" calls
@@ -249,7 +249,7 @@ source.
 
 Relies entirely on Next.js's built-in App Router caching/revalidation model:
 Server Actions call `revalidatePath(...)` after a mutation to invalidate the
-relevant route's cache (e.g. `saved-occupations.ts` revalidates `/saved` and
+relevant route's cache (e.g. `src/lib/actions/saved-occupations.ts` revalidates `/saved` and
 the specific `/roles/[slug]`). No explicit `fetch` cache configuration, no
 `unstable_cache`, no external cache layer (no Redis/Upstash), and no
 `revalidate`/`dynamic` export was found on the pages read during this audit
@@ -266,7 +266,7 @@ typed `{ error: string }` / `{ success: true }`-style result objects rather
 than throwing for expected failure cases (e.g. "not_signed_in", "not_found",
 "An account with that email already exists."); client components branch on
 these and show inline messages or `sonner` toasts (e.g.
-`run-import-button.tsx` calling `toast.error`/`toast.success`). Provider
+`src/components/run-import-button.tsx` calling `toast.error`/`toast.success`). Provider
 connectors catch their own errors inside `runProvider` (`src/lib/providers/types.ts`)
 and convert them into a structured `ImportReport` rather than letting an
 unhandled rejection reach the caller.

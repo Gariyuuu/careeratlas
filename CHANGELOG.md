@@ -79,8 +79,8 @@ fixed** — out of scope for a documentation-only audit):
 - `README.md`'s "not implemented" section is stale — it still lists Census
   ACS and College Scorecard connectors as unimplemented; both were
   completed in commits `fd94d85` and `90ef269` (TASK-002).
-- 3 of 10 scoring functions (`accessibility-score.ts`,
-  `career-value-score.ts`, `salary-opportunity-score.ts`) have no unit
+- 3 of 10 scoring functions (`src/lib/scoring/accessibility-score.ts`,
+  `src/lib/scoring/career-value-score.ts`, `src/lib/scoring/salary-opportunity-score.ts`) have no unit
   tests (TASK-003).
 - `.env.local` carries ~17 unused Vercel/Neon-integration environment
   variables not referenced anywhere in `src/` (TASK-004).

@@ -37,13 +37,13 @@ used). No visual regression testing, no accessibility testing tooling.
 ## Existing tests (verified this audit — ran `npm run test`)
 
 **7 files, 34 tests, all passing:**
-- `confidence.test.ts`
-- `cost-of-living.test.ts`
-- `education-roi.test.ts`
-- `momentum-score.test.ts`
-- `percentile-rank.test.ts`
-- `projection.test.ts`
-- `transition-score.test.ts`
+- `src/lib/scoring/confidence.test.ts`
+- `src/lib/scoring/cost-of-living.test.ts`
+- `src/lib/scoring/education-roi.test.ts`
+- `src/lib/scoring/momentum-score.test.ts`
+- `src/lib/scoring/percentile-rank.test.ts`
+- `src/lib/scoring/projection.test.ts`
+- `src/lib/scoring/transition-score.test.ts`
 
 **5 Playwright specs (not run this audit — see "Known flaky/unverified"
 below):**
@@ -57,8 +57,8 @@ below):**
 
 ## Missing test areas (highest-value first)
 
-1. **`accessibility-score.ts`, `career-value-score.ts`,
-   `salary-opportunity-score.ts`** — the only 3 of 10 scoring files with no
+1. **`src/lib/scoring/accessibility-score.ts`, `src/lib/scoring/career-value-score.ts`,
+   `src/lib/scoring/salary-opportunity-score.ts`** — the only 3 of 10 scoring files with no
    unit test. See `TASKS.md` TASK-003.
 2. **Server Actions** — no test coverage found for
    `src/lib/actions/*.ts` (auth, profile, saved-occupations, comparisons,
@@ -66,7 +66,7 @@ below):**
 3. **API route handlers** — no direct test coverage for
    `/api/search`, `/api/export/saved`, `/api/cron/update-trends` beyond
    E2E incidental coverage (search is exercised by
-   `search-and-role.spec.ts`/`compare-selector` flows; export and cron are
+   `e2e/search-and-role.spec.ts`/`compare-selector` flows; export and cron are
    not exercised by any E2E spec found).
 4. **Data provider connectors** (`src/lib/providers/*.ts`) — no test
    coverage found (unit tests mocking `fetch`, or integration tests against
@@ -148,7 +148,7 @@ confirmed with the user that it's safe to write to.
 
 No dedicated fixture files exist — the "fixture" for E2E tests is the full
 deterministic seed dataset (`npm run db:seed`), and
-`save-career.spec.ts` generates its own throwaway test user
+`e2e/save-career.spec.ts` generates its own throwaway test user
 (`e2e-${Date.now()}@example.com`) rather than relying on a pre-seeded
 account. No secrets appear in any test file (confirmed by reading all 5
 E2E specs' visible portions and the 7 unit test files' existence — none
@@ -174,7 +174,7 @@ percentage is currently tracked or enforced.
 ## Critical untested flows
 
 1. Authentication (sign-up/sign-in/sign-out) — only indirectly exercised
-   via `save-career.spec.ts`'s incidental sign-up step, not a dedicated
+   via `e2e/save-career.spec.ts`'s incidental sign-up step, not a dedicated
    auth-focused spec.
 2. Account deletion — no E2E or unit coverage found.
 3. The admin data-import trigger and its (missing) authorization — no

@@ -29,16 +29,23 @@ Repo: `/Users/gariyuu/Projects/careeratlas`. GitHub:
    `TESTING.md`, `DEPLOYMENT.md`, `DECISIONS.md`, `ROADMAP.md`,
    `CHANGELOG.md`, `SESSION_LOG.md`) as needed for depth on a specific area.
 
-## What is the current task?
+## Current task
 
-**There is no in-progress product task.** The repo was shipped and clean
-when the 2026-08-06 documentation audit began, and the audit itself
-(documentation only, no code changes) is now complete. The recommended next
-task, if you're picking this project up to do real work, is **TASK-001**
-in `TASKS.md`: add an authentication/authorization check to
-`/admin/data-status` (`src/app/(app)/admin/data-status/page.tsx`) and its
-`triggerDataImport` Server Action (`src/lib/actions/admin.ts`), which
-currently have none at all — see `SECURITY.md` for the full writeup.
+**Current task ID: `T-005`** (maps to `TASKS.md` **TASK-005**; this repo's
+backlog uses `TASK-XXX` numbering, `T-005` is the stable cross-file ID).
+
+**[Verified 2026-08-17]** **TASK-001 is closed** — fixed for real in commit
+`80a7961` (2026-08-13): `/admin/data-status` and `triggerDataImport` are now
+gated behind an `ADMIN_EMAILS` allowlist. This section previously
+recommended TASK-001 as the next task; that was stale (written before the
+fix landed) and is corrected here.
+
+There is no in-progress product task — the repo is shipped and stable. The
+recommended next task, if you're picking this project up to do real work, is
+**TASK-005 / `T-005`** in `TASKS.md`: fix "Run now" throwing an unhandled
+error for four seeded-but-unimplemented data sources
+(World Bank/OECD/ILOSTAT/Eurostat) — see `TASKS.md` for full acceptance
+criteria.
 
 ## What was the previous agent doing?
 
@@ -49,9 +56,11 @@ re-verified that doc set against the real repo state as a "final transfer
 checkpoint" pass, fixed two categories of staleness it found (the doc set's
 description of its own git HEAD, and a wrong Prisma model count — see
 `CHANGELOG.md`'s 2026-08-07 entry), and reconfirmed all previously-open
-tasks (TASK-001/002/003) are still genuinely open. Neither session changed
-any application code. See `SESSION_LOG.md` for the complete record of both
-sessions.
+tasks (TASK-001/002/003) were still genuinely open **as of that pass**.
+**[Verified 2026-08-17]** TASK-001 has since been fixed for real, in commit
+`80a7961` (2026-08-13) — see "Current task" above. TASK-002/003 remain open.
+Neither documentation session changed any application code. See
+`SESSION_LOG.md` for the complete record of all sessions.
 
 ## What works right now?
 
@@ -70,9 +79,9 @@ data connectors, and the daily Vercel Cron job. `npm run lint`,
 
 Nothing crashes or fails outright based on static review, but two real
 issues were found:
-1. **`/admin/data-status` + `triggerDataImport` have no auth check at
-   all** — anyone can view connector internals and trigger real outbound
-   API calls. (TASK-001, `SECURITY.md`.)
+1. ~~`/admin/data-status` + `triggerDataImport` have no auth check at
+   all`~~ — **fixed** `80a7961` (2026-08-13), TASK-001 closed. See
+   `SECURITY.md`.
 2. **The admin page's "Run now" button, when clicked for World Bank/OECD/
    ILOSTAT/Eurostat** (4 seeded-but-unimplemented data sources), throws an
    unhandled error instead of failing gracefully. (TASK-005, `TASKS.md`.)
@@ -86,8 +95,9 @@ and 3 of 10 scoring functions have no unit tests (TASK-003).
 1. Confirm the state described here still holds: `git status`, `git log -5`.
 2. Re-run `npm run lint && npx tsc --noEmit && npm run test` to confirm the
    clean baseline.
-3. If doing product work: start with TASK-001 (see `TASKS.md` for full
-   acceptance criteria) unless the user directs otherwise.
+3. If doing product work: start with TASK-005 / `T-005` (see `TASKS.md`
+   for full acceptance criteria) unless the user directs otherwise —
+   TASK-001 is already closed.
 4. If asked to verify the build or run E2E tests: **do not** run them
    against the `DATABASE_URL` currently in `.env`/`.env.local` — it's a
    live Neon database — set up a disposable database first or get explicit
@@ -100,7 +110,7 @@ and 3 of 10 scoring functions have no unit tests (TASK-003).
 - `src/lib/auth.ts` — the entire auth system.
 - `src/lib/scoring/*.ts` — every user-facing formula, unit-tested and
   shared between the seed script and live pages.
-- `src/lib/providers/*.ts` + `registry.ts` — the live-data-connector plugin
+- `src/lib/providers/*.ts` + `src/lib/providers/registry.ts` — the live-data-connector plugin
   system.
 - `prisma/seed.ts` — how the entire deterministic demo dataset is generated.
 - `src/components/data-status-badge.tsx` — small file, large importance:
@@ -174,9 +184,10 @@ Then, independently:
    last step before committing, not before, or you'll reintroduce the same
    bug.
 
-Continue the current recommended task (TASK-001 in TASKS.md — adding
-auth/authorization to /admin/data-status and triggerDataImport — unless the
-user directs you elsewhere) without redoing work that's already finished.
+Continue the current recommended task (TASK-005 / T-005 in TASKS.md — fix
+"Run now" throwing an unhandled error for unimplemented data sources —
+unless the user directs you elsewhere; TASK-001 is already closed) without
+redoing work that's already finished.
 Preserve the existing architecture, conventions, and the
 reported/estimated/forecast/simulated data-labeling discipline described in
 CLAUDE.md unless you have a strong, explicitly-discussed reason to change

@@ -2,9 +2,20 @@
 
 This is a defensive, read-only review performed by static code inspection
 during the 2026-08-06 documentation audit. **No destructive or exploit
-testing was performed** — no attempt was made to actually call the
-unauthenticated admin action, no fuzzing, no live network requests against
-production. All findings below are traced from source code.
+testing was performed** — no attempt was made to actually call the admin
+action, no fuzzing, no live network requests against production. All
+findings below are traced from source code.
+
+**2026-08-17 update**: this review's headline finding (missing auth on
+`/admin/data-status`/`triggerDataImport`) was fixed in commit `80a7961`
+(2026-08-13, "fix: gate the admin data-import action, not the status page
+(TASK-001)") — verified by reading the current `src/lib/actions/admin.ts`
+and the new `src/lib/admin-auth.ts` directly. The rest of this file's
+findings (rate limiting, email verification, no centralized auth gate,
+etc.) were re-checked and remain accurate/still open as of this pass. See
+"Admin access" and "Recommended fixes" below for the corrected detail —
+sections describing this as an open, unfixed gap have been updated in
+place rather than left contradicting each other.
 
 ## Authentication boundaries
 
@@ -35,18 +46,25 @@ production. All findings below are traced from source code.
 - Verified auth-gated: `/profile` mutations (`upsertProfile`),
   `/settings`'s `deleteAccountAction`, `toggleSavedOccupation`,
   `saveComparison`/`deleteSavedComparison`, `GET /api/export/saved`.
-- Verified **NOT** auth-gated (public by omission, not by design):
-  **`/admin/data-status` (page) and `triggerDataImport` (Server Action)** —
-  no `auth()` call anywhere in either file's code path. This is the
-  headline finding of this review.
+- **[Outdated as of `80a7961`, 2026-08-13]** This bullet previously read
+  "not auth-gated" for both `/admin/data-status` and `triggerDataImport`.
+  Re-verified 2026-08-17: **`/admin/data-status` (the page) is still
+  intentionally public** (a deliberate product decision, per that commit's
+  message — connector status/env-var-names/public indicators are treated
+  as a legitimate public surface). **`triggerDataImport` (the Server
+  Action) is now gated** — it calls `isAdminSession()`
+  (`src/lib/admin-auth.ts`) first and denies (returns a failed
+  `ImportReport`, does not throw) if the caller's session email isn't in
+  the `ADMIN_EMAILS` allowlist. Verified by reading both files directly.
 - `deleteSavedComparison` correctly scopes its delete by both `id` AND
   `userId` (`deleteMany({ where: { id, userId } })`), which prevents an
   authenticated user from deleting another user's comparison even if they
   guess/obtain its `id` — a well-implemented ownership check, worth calling
-  out as a positive example alongside the admin gap.
-- No role/permission model exists anywhere in the schema — "admin" is
-  purely a route name (`/admin/data-status`), not an enforced concept. There
-  is no `User.role` field, no allowlist, nothing.
+  out as a positive example.
+- Still no `User.role` field or Prisma-level role/permission model — the
+  fix above is an **env-var allowlist**, not a schema-backed role, per the
+  commit's explicit note that it avoids a schema change (see `DECISIONS.md`
+  if a decision entry was recorded for this trade-off).
 
 ## Protected routes
 
@@ -57,8 +75,8 @@ production. All findings below are traced from source code.
 | `toggleSavedOccupation` | Yes | explicit `auth()` check |
 | `saveComparison` / `deleteSavedComparison` | Yes | explicit `auth()` check |
 | `GET /api/export/saved` | Yes | explicit `auth()` check, 401 response |
-| **`/admin/data-status` (page)** | **No** | no `auth()` call found |
-| **`triggerDataImport`** | **No** | no `auth()` call found |
+| `/admin/data-status` (page) | **No — intentionally public** | product decision, `80a7961` commit message; no `auth()` call, by design |
+| `triggerDataImport` | **Yes, as of `80a7961`** | `isAdminSession()` (`ADMIN_EMAILS` allowlist, fails closed) |
 | `GET /api/cron/update-trends` | Conditional | only if `CRON_SECRET` env var is set |
 | All other `(app)` pages (dashboard, salary, careers, roles, transitions, education, trends, compare, methodology, data-sources) | No (by design) | app is meant to be browsable anonymously; personalization degrades gracefully |
 
@@ -77,7 +95,7 @@ production. All findings below are traced from source code.
   file — every example in `CLAUDE.md`/this file uses placeholders only.
   `DATABASE_URL` values were only ever read in masked form (password
   portion redacted) during investigation.
-- `census-acs-provider.ts` and `college-scorecard-provider.ts` both build
+- `src/lib/providers/census-acs-provider.ts` and `src/lib/providers/college-scorecard-provider.ts` both build
   their outbound request URL with `url.searchParams.set("key"/"api_key",
   process.env.X!)` — the key goes into the URL query string of an
   **outbound, server-to-server** request only (never returned to the
@@ -153,34 +171,41 @@ Not applicable — the app has no incoming webhook receivers (see
 ## Rate limiting
 
 **None exists anywhere** — not on sign-in/sign-up, not on `/api/search`,
-not on `/api/cron/update-trends`, not on `triggerDataImport`. Combined with
-the missing auth on the admin action, this means an anonymous actor could
-in principle hammer `triggerDataImport` repeatedly, generating excessive
-outbound calls to BLS/O*NET/Revelio (and Census/College Scorecard if keyed)
-and excessive `DataImportRun` rows. Real-world severity is low (no cost to
-this app beyond noise, and the external APIs are public/free), but it's the
-kind of gap that compounds with the auth issue.
+not on `/api/cron/update-trends`. `triggerDataImport` is now auth-gated
+(`80a7961`) but still has **no rate limit** on top of that gate — an
+authorized admin (or anyone who obtains admin-allowlisted credentials)
+could still hammer it repeatedly. Real-world severity is low (no cost to
+this app beyond noise, and the external APIs are public/free).
 
 ## Admin access
 
-**This is the headline finding of this review.** `/admin/data-status`
-(`src/app/(app)/admin/data-status/page.tsx`) and `triggerDataImport`
-(`src/lib/actions/admin.ts`) have **zero access control**:
-- Anyone who navigates to `/admin/data-status` (linked from the public
-  landing page's footer) sees connector operational internals: last
-  success/attempt times, rows imported/rejected, quality-check warnings,
-  and raw error messages from failed import attempts.
-- Anyone can click "Run now" for any connector, which calls
-  `triggerDataImport(slug)` server-side with no identity check whatsoever —
-  not even "is this user signed in," let alone "is this user an admin."
-- **Severity**: Low-to-Medium in practice for this specific app (no
-  destructive action results — worst case is wasted external API calls,
-  minor `DataImportRun` table bloat, and information disclosure of
-  operational status/error text that isn't itself sensitive). **But** it is
-  a textbook missing-authorization bug, and the pattern (no centralized
-  gate, easy to forget on a new route) could recur on a future, higher-
-  stakes admin feature if not fixed at the root.
-- **Recommended fix**: see `TASKS.md` TASK-001.
+**[Outdated — fixed 2026-08-13, re-verified 2026-08-17]** This section
+previously described `/admin/data-status` and `triggerDataImport` as
+having zero access control. Current state:
+- `/admin/data-status` (`src/app/(app)/admin/data-status/page.tsx`)
+  **remains intentionally public** — a deliberate product decision (see
+  `80a7961`'s commit message): connector status, env var *names*, and
+  public economic indicators are treated as a legitimate public surface.
+  Anyone can still view last success/attempt times, rows imported/
+  rejected, quality-check warnings, and (now sanitized via
+  `sanitizeErrorText()`) error messages.
+- `triggerDataImport` (`src/lib/actions/admin.ts`) **now requires**
+  `isAdminSession()` to return `true` — the caller's session email must be
+  in the `ADMIN_EMAILS` allowlist (comma-separated, case-insensitive,
+  fails closed if unset/empty). `RunImportButton` is also hidden from
+  non-admins client-side, but the server-side check in the action is the
+  real gate (verified: the check is inside `triggerDataImport` itself, not
+  only in the UI).
+- **Residual gaps**: still no `User.role` schema field (the fix is an
+  env-var allowlist, not a DB-backed role); still no rate limiting on the
+  now-gated action; the daily Vercel Cron path
+  (`runAllConfiguredImports()` → `runDataImport()`) never goes through
+  `triggerDataImport`/`isAdminSession()` at all, so it is unaffected by
+  (and doesn't need) this change — confirmed via the commit's own grep of
+  every `triggerDataImport` reference.
+- **Recommended fix**: TASK-001 is closed. See `TASKS.md` TASK-005 for the
+  remaining open admin-page issue (unhandled error for unregistered
+  sources).
 
 ## Database policies
 
@@ -195,10 +220,17 @@ second consumer of this database.
 
 ## Logging of sensitive data
 
-No `console.log`/`console.error`/`console.warn` calls exist anywhere in
-`src/` (confirmed by repo-wide grep) — so there's no risk of this app's own
-code accidentally logging a password, session token, or API key to
-stdout/a log aggregator. Prisma's own internal query-error logging
+**[Outdated]** This previously said no `console.*` calls exist anywhere in
+`src/`. As of `80a7961` (2026-08-13) there is exactly **one**:
+`triggerDataImport` (`src/lib/actions/admin.ts`) calls
+`console.warn(...)` on an unauthorized-access denial, logging only the
+requested `slug` — no secret, session token, or user-identifying data is
+included in that log line (verified by reading the call site). This was a
+deliberate, documented exception (see the commit message and `CLAUDE.md`),
+not a regression of the "no console.* in src/" convention — it's the sole
+instance and was added specifically so an auth denial is distinguishable
+from a real provider failure in logs. Prisma's own internal query-error
+logging
 (`src/lib/prisma.ts`: `["error", "warn"]` in dev, `["error"]` in
 production) could theoretically include query parameter values in error
 output depending on Prisma's own logging verbosity, but this is standard
@@ -222,12 +254,14 @@ setting shown.
 
 ## Production security gaps (headline list)
 
-1. **`/admin/data-status` + `triggerDataImport` have no auth/authz** (see
-   above) — the single most important finding.
-2. **No rate limiting anywhere** — compounds gap #1 and is a general
-   hardening gap for sign-in/sign-up too.
-3. **No centralized auth middleware** — structural risk of repeating gap #1
-   on a future route.
+1. ~~`/admin/data-status` + `triggerDataImport` have no auth/authz`~~ —
+   **fixed `80a7961` (2026-08-13)**, TASK-001 closed. `/admin/data-status`
+   itself stays public by design; `triggerDataImport` is now gated by an
+   `ADMIN_EMAILS` allowlist.
+2. **No rate limiting anywhere** — still open, including on the now-gated
+   `triggerDataImport`, and a general hardening gap for sign-in/sign-up.
+3. **No centralized auth middleware** — still open; structural risk of a
+   future route repeating the pattern TASK-001 just fixed one instance of.
 4. **No email verification / password reset** — not a vulnerability per se,
    but means a typo'd or lost-access email has no recovery path today, and
    there's no proof-of-email-ownership step at signup.
@@ -241,8 +275,8 @@ setting shown.
 
 ## Recommended fixes (priority order)
 
-1. Add an `auth()` check (at minimum "must be signed in"; ideally a real
-   role check) to `/admin/data-status` and `triggerDataImport`. (TASK-001)
+1. ~~Add an `auth()` check to `/admin/data-status` and
+   `triggerDataImport`.~~ **Done — `80a7961`, TASK-001 closed 2026-08-13.**
 2. Add basic rate limiting to `signInAction`/`signUpAction` at minimum, and
    consider it for `triggerDataImport` and `/api/search` too.
 3. Consider a `middleware.ts`-based or shared-helper-based auth gate so new

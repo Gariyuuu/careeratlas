@@ -25,7 +25,7 @@ values. No invalid value was found in any code path read during this audit.
 ### DEC-002 — Every data-bearing row carries a `dataStatus` field, capped-confidence for simulated data
 **Status**: Verified (schema comment, `src/lib/scoring/confidence.ts`
 comment, `README.md`'s "Reported vs. estimated vs. forecast vs. simulated"
-section, and the UI's `data-status-badge.tsx`).
+section, and the UI's `src/components/data-status-badge.tsx`).
 **Decision**: `computeConfidence()` hard-caps simulated data's confidence
 score at `0.55` "regardless of sample size" (direct quote from the
 function's own comment), and every simulated figure gets a visible amber
@@ -105,7 +105,7 @@ decision (no comment or doc anywhere suggests admin was meant to be public).
 ### DEC-007 — `DataProvider` interface as a plugin contract for external data sources
 **Status**: Verified (`src/lib/providers/types.ts`'s doc comment: "New
 sources plug in without touching the rest of the app: implement this
-interface, register the connector in `registry.ts`, and add a matching row
+interface, register the connector in `src/lib/providers/registry.ts`, and add a matching row
 to `src/lib/seed-data/data-sources.ts`").
 **Decision**: every external data source — regardless of whether it needs
 an API key, what format it returns, or how it maps into the schema — is
@@ -116,12 +116,12 @@ completely decoupled from any individual connector's internals.
 sources "without touching the rest of the app."
 **Consequence**: this is why 6 connectors could be added one-per-commit
 over 6 days (per git history) with minimal risk to the rest of the app —
-each commit only touched its own new provider file, `registry.ts`, and
-`data-sources.ts`.
+each commit only touched its own new provider file, `src/lib/providers/registry.ts`, and
+`src/lib/seed-data/data-sources.ts`.
 
 ### DEC-008 — Import runs never delete previously valid data on failure
 **Status**: Verified (`README.md`: "it never deletes previously valid data
-on failure"; `run-import.ts`'s `runDataImport` only ever creates/updates
+on failure"; `src/lib/providers/run-import.ts`'s `runDataImport` only ever creates/updates
 `DataImportRun`/`DataQualityCheck` rows and calls each provider's
 `upsertData`, which is additive/upsert-only in every provider implementation
 read during this audit — none contain a bulk `deleteMany` gated on the
@@ -137,7 +137,7 @@ alerts a human to a failing connector).
 
 ### DEC-009 — Client-computed scoring functions are shared with the seed script, not duplicated
 **Status**: Verified (`prisma/seed.ts` imports directly from
-`src/lib/scoring/*`; `projection-calculator.tsx` imports the same
+`src/lib/scoring/*`; `src/app/(app)/projection/projection-calculator.tsx` imports the same
 `projectSalary` used to seed baseline forecasts).
 **Reasoning (Inferred, but strongly supported by the code structure and by
 `README.md`'s "Every formula is transparent by design" framing)**: guarantees

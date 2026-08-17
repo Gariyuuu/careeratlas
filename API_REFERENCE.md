@@ -86,6 +86,18 @@ the Credentials provider.
 **Details**: see `ARCHITECTURE.md`'s "Authentication flow" and
 `SECURITY.md`.
 
+## Next.js special-file metadata routes (added `fb63183`, 2026-08-13)
+
+Not hand-written route handlers, but they do produce real HTTP endpoints
+via Next.js file-convention routing — worth listing here since they didn't
+exist when this file was first written.
+
+| Route | Source | Purpose | Auth |
+|---|---|---|---|
+| `GET /opengraph-image` | `src/app/opengraph-image.tsx` | generates the social-preview card image | none |
+| `GET /robots.txt` | `src/app/robots.ts` | crawler rules | none |
+| `GET /sitemap.xml` | `src/app/sitemap.ts` | static sitemap | none |
+
 ## Server Actions (`src/lib/actions/*.ts`, all `"use server"`)
 
 These aren't HTTP-addressable in the traditional sense (Next.js compiles
@@ -188,12 +200,21 @@ level, correctly).
 
 ### `triggerDataImport(slug)` — `src/lib/actions/admin.ts`
 **Purpose**: manually run one data connector.
-**Auth**: **NONE — no `auth()` call at all.** See `SECURITY.md` and
-`TASKS.md` TASK-001.
+**Auth**: **Gated as of `80a7961` (2026-08-13, fixes TASK-001)** —
+requires `isAdminSession()` (`src/lib/admin-auth.ts`) to return `true`:
+caller's session email must (case-insensitively) match the comma-separated
+`ADMIN_EMAILS` env var, which fails closed (unset/empty = deny everyone).
+An unauthorized call `console.warn`s (the only `console.*` call in this
+codebase — see `CLAUDE.md`) and returns `{ status: "failed", ...,
+errorMessage: "Not authorized." }` rather than throwing, so a denial is
+distinguishable from a real provider failure in logs. `/admin/data-status`
+itself (the page) stays public/unauthenticated by design — see
+`SECURITY.md`.
 **Params**: `slug: string`.
 **Response**: an `ImportReport` (`{ status, rowsImported, rowsRejected,
 warnings, errorMessage? }`), or an **unhandled thrown Error** if `slug`
-doesn't match a registered provider (see `TASKS.md` TASK-005).
+doesn't match a registered provider (`world-bank`/`oecd`/`ilo`/`eurostat`
+are seeded but unregistered — still open, see `TASKS.md` TASK-005).
 **Side effects**: `revalidatePath("/admin/data-status")`, plus everything
 `runDataImport` does (DB writes, outbound HTTP calls).
 **DB ops / external calls**: delegated to `runDataImport` — see

@@ -25,13 +25,13 @@
 - Mobile: `src/components/layout/mobile-nav.tsx` — a bottom bar showing
   `MOBILE_PRIMARY_NAV` (the first 4 items: Dashboard, Career Explorer,
   Salary Explorer, Career Transitions), with the rest presumably reachable
-  via a "More" affordance (per the comment in `nav-items.ts`; this audit did
-  not read `mobile-nav.tsx`'s full implementation to confirm the exact "More"
+  via a "More" affordance (per the comment in `src/components/layout/nav-items.ts`; this audit did
+  not read `src/components/layout/mobile-nav.tsx`'s full implementation to confirm the exact "More"
   UX).
 - Top bar: `src/components/layout/topbar.tsx` — houses the global search
   trigger and user menu (`src/components/layout/user-menu.tsx`).
 - Global search: `src/components/layout/global-search.tsx` — command-K
-  style dialog (built on the `command.tsx` primitive, which wraps `cmdk`),
+  style dialog (built on the `src/components/ui/command.tsx` primitive, which wraps `cmdk`),
   debounced fetch to `/api/search`.
 - Note: `NAV_ITEMS` has no explicit "Admin" entry — `/admin/data-status` is
   only linked from the landing page's footer (`src/app/page.tsx`), not from
@@ -42,13 +42,13 @@
 ## Page structure
 
 Nearly every `(app)` page follows the same shape: a Server Component
-`page.tsx` that (1) fetches data via `src/lib/data/*`, (2) renders a
+route `**/page.tsx` that (1) fetches data via `src/lib/data/*`, (2) renders a
 `PageHeader` (`src/components/page-header.tsx`) with title/description, then
 (3) composes `Card`/`Table`/chart components, delegating any interactive
-filtering/state to a colocated client component (e.g. `salary-filters.tsx`,
-`role-filters.tsx`, `compare-selector.tsx`, `projection-calculator.tsx`,
-`education-compare-tool.tsx`, `momentum-leaderboard.tsx`,
-`transition-table.tsx`, `profile-form.tsx`).
+filtering/state to a colocated client component (e.g. `src/app/(app)/salary/salary-filters.tsx`,
+`src/app/(app)/roles/role-filters.tsx`, `src/app/(app)/compare/compare-selector.tsx`, `src/app/(app)/projection/projection-calculator.tsx`,
+`src/app/(app)/education/compare/education-compare-tool.tsx`, `src/app/(app)/trends/momentum-leaderboard.tsx`,
+`src/app/(app)/transitions/transition-table.tsx`, `src/app/(app)/profile/profile-form.tsx`).
 
 ## Reusable components
 
@@ -58,16 +58,16 @@ filtering/state to a colocated client component (e.g. `salary-filters.tsx`,
   radio-group, select, separator, sheet, skeleton, slider, sonner (toast),
   switch, table, tabs, textarea, tooltip.
 - **App-specific shared components** (`src/components/`):
-  `data-status-badge.tsx` (the reported/estimated/forecast/simulated
-  badge — see below), `data-table.tsx` (TanStack Table wrapper),
-  `page-header.tsx`, `role-picker.tsx` (command-palette-style role
-  selector), `run-import-button.tsx`, `save-career-button.tsx`,
-  `save-comparison-button.tsx`, `delete-account-button.tsx`,
-  `session-provider.tsx`, `theme-provider.tsx`, `theme-settings.tsx`,
-  `theme-toggle.tsx`, `transition-graph.tsx` (hand-rolled SVG radial graph).
+  `src/components/data-status-badge.tsx` (the reported/estimated/forecast/simulated
+  badge — see below), `src/components/data-table.tsx` (TanStack Table wrapper),
+  `src/components/page-header.tsx`, `src/components/role-picker.tsx` (command-palette-style role
+  selector), `src/components/run-import-button.tsx`, `src/components/save-career-button.tsx`,
+  `src/components/save-comparison-button.tsx`, `src/components/delete-account-button.tsx`,
+  `src/components/session-provider.tsx`, `src/components/theme-provider.tsx`, `src/components/theme-settings.tsx`,
+  `src/components/theme-toggle.tsx`, `src/components/transition-graph.tsx` (hand-rolled SVG radial graph).
 - **Charts** (`src/components/charts/`, Recharts-based):
-  `comparison-bar-chart.tsx`, `comparison-radar-chart.tsx`,
-  `salary-distribution-chart.tsx`, `salary-trend-chart.tsx`.
+  `src/components/charts/comparison-bar-chart.tsx`, `src/components/charts/comparison-radar-chart.tsx`,
+  `src/components/charts/salary-distribution-chart.tsx`, `src/components/charts/salary-trend-chart.tsx`.
 
 ## The `DataStatusBadge` component (`src/components/data-status-badge.tsx`)
 
@@ -88,7 +88,7 @@ not a bug).
 (landing page + presumably topbar). Full settings UI:
 `src/components/theme-settings.tsx` (`/settings` page). Dark mode is a
 `.dark` class on `<html>`, matching Tailwind v4's `@custom-variant dark
-(&:is(.dark *))` declaration in `globals.css`.
+(&:is(.dark *))` declaration in `src/app/globals.css`.
 
 ## Colors
 
@@ -115,7 +115,7 @@ at the top of the file:
 `Geist` (sans) and `Geist Mono` via `next/font/google`, wired as CSS
 variables (`--font-geist-sans`, `--font-geist-mono`) in
 `src/app/layout.tsx`, mapped to Tailwind's `--font-sans`/`--font-mono`
-theme tokens in `globals.css`. `--font-heading` is aliased to
+theme tokens in `src/app/globals.css`. `--font-heading` is aliased to
 `--font-sans` (no separate heading typeface).
 
 ## Spacing / border radius
@@ -135,7 +135,7 @@ below).
 
 ## Animation
 
-`tw-animate-css` (imported in `globals.css`) provides animation utility
+`tw-animate-css` (imported in `src/app/globals.css`) provides animation utility
 classes used by shadcn/ui's dialog/dropdown/sheet/popover open/close
 transitions. `disableTransitionOnChange` on `ThemeProvider` prevents a
 flash of transitioning colors on theme switch.
@@ -157,18 +157,18 @@ not deliberately kept assets). The app's only custom visual asset is
 
 ## Modals
 
-Built on the `dialog.tsx` primitive (Radix Dialog) and `sheet.tsx` (Radix
+Built on the `src/components/ui/dialog.tsx` primitive (Radix Dialog) and `src/components/ui/sheet.tsx` (Radix
 Dialog variant for slide-in panels, likely used by `MobileNav`'s "More"
 menu and/or filter panels on mobile — not exhaustively confirmed per-page
-this audit). Command-palette-style overlays (`global-search.tsx`,
-`role-picker.tsx`, `compare-selector.tsx`) use `command.tsx`'s
+this audit). Command-palette-style overlays (`src/components/layout/global-search.tsx`,
+`src/components/role-picker.tsx`, `src/app/(app)/compare/compare-selector.tsx`) use `src/components/ui/command.tsx`'s
 `CommandDialog`.
 
 ## Notifications / toasts
 
 `sonner` (`src/components/ui/sonner.tsx` wrapper, `<Toaster />` mounted once
 in the root layout). Used for async action feedback, e.g.
-`run-import-button.tsx`'s `toast.success`/`toast.error` after a manual data
+`src/components/run-import-button.tsx`'s `toast.success`/`toast.error` after a manual data
 import.
 
 ## Forms
@@ -181,18 +181,18 @@ controlled inputs for interactive tools that don't need a page
 submit/reload (projection calculator sliders, education-compare-tool
 overrides, all the filter components). No cross-cutting form library
 (no react-hook-form in `package.json`) — validation is Zod (auth actions
-only) or manual coercion (`profile.ts`).
+only) or manual coercion (`src/lib/actions/profile.ts`).
 
 ## Loading states
 
-`skeleton.tsx` primitive exists in `src/components/ui/`. This audit did not
+`src/components/ui/skeleton.tsx` primitive exists in `src/components/ui/`. This audit did not
 exhaustively confirm every data-fetching page renders a skeleton via a
 `loading.tsx` file (App Router's file-based loading-state convention) —
 no `loading.tsx` files were enumerated in the `find src -type f` listing
 taken during this audit, which suggests **no route-level `loading.tsx`
 files exist**, meaning Next.js's automatic Suspense-boundary loading UI is
 not used; any in-component loading state (e.g. `useTransition`'s `pending`
-flag, used in `run-import-button.tsx` and presumably other action-triggering
+flag, used in `src/components/run-import-button.tsx` and presumably other action-triggering
 buttons) is handled ad hoc per component instead.
 
 ## Empty states
@@ -210,7 +210,7 @@ No custom `error.tsx` boundary files were located under `src/app/` during
 this audit's file enumeration — see `TASKS.md` technical debt note. Server
 Action failures surface as returned `{ error: string }` objects rendered
 inline by the calling client component (confirmed pattern across
-`auth.ts`, `profile.ts`, `saved-occupations.ts`, `comparisons.ts`) rather
+`src/lib/actions/auth.ts`, `src/lib/actions/profile.ts`, `src/lib/actions/saved-occupations.ts`, `src/lib/actions/comparisons.ts`) rather
 than thrown exceptions reaching a React error boundary, **except** for
 `triggerDataImport` on an unregistered provider slug, which does throw
 unhandled (see `TASKS.md` TASK-005).

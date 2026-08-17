@@ -7,10 +7,23 @@ documentation-only, no behavior changes.
 
 ## Current task
 
-**There is no in-progress product task.** The repository was in a clean,
-shipped state when this audit began (see `PROJECT_STATE.md`). The nearest
-thing to a "current task" is: **pick one of the High/Medium items below and
-fix it**, starting with TASK-001.
+**Current task ID: `T-005`** (this repo's backlog uses a `TASK-XXX` numbering;
+`T-005` is the stable cross-file ID for the repo-memory system's "current
+task" tracking and refers to the same item as **TASK-005** below).
+
+**[Verified 2026-08-17]** `TASK-001` — previously the item pointed to here —
+is **closed**. It was fixed for real in commit `80a7961` (2026-08-13):
+`triggerDataImport` and `/admin/data-status` are now gated behind an
+`ADMIN_EMAILS` allowlist (`src/lib/admin-auth.ts`), fail-closed if unset. See
+`DECISIONS.md`, `SECURITY.md`, and `CLAUDE.md` → Current status for the full
+detail. `PROJECT_STATE.md` and `HANDOFF.md` previously still described
+`TASK-001` as open/recommended-next — that was stale and has been corrected
+in this pass.
+
+With `TASK-001` closed, the nearest thing to a "current task" is: **pick one
+of the remaining open items below**, starting with **TASK-005 / `T-005`**
+(High priority, the only other High-priority item — see SECURITY.md's own
+cross-reference to it).
 
 A brand-new account resuming from here should:
 1. Read `CLAUDE.md`, this file, and `HANDOFF.md`.
@@ -18,8 +31,8 @@ A brand-new account resuming from here should:
    audit.
 3. Run `npm run lint && npx tsc --noEmit && npm run test` to confirm the
    clean baseline still holds.
-4. Pick TASK-001 (or whichever the user directs) and follow its acceptance
-   criteria below.
+4. Pick TASK-005 / `T-005` (or whichever the user directs) and follow its
+   acceptance criteria below.
 
 ## Next up
 
@@ -33,7 +46,11 @@ None.
 ## High priority
 
 ### TASK-001 — Add authentication/authorization to `/admin/data-status` and `triggerDataImport`
-**Status**: Open (discovered, not fixed).
+**Status**: **Closed — fixed in `80a7961` (2026-08-13).** `triggerDataImport`
+and `/admin/data-status` are now gated behind an `ADMIN_EMAILS` allowlist
+(`src/lib/admin-auth.ts`), fail-closed if unset. See `SECURITY.md` and
+`CLAUDE.md` → Current status. The description/acceptance criteria below are
+preserved as a historical record of what was fixed, not a live task.
 **Description**: `src/app/(app)/admin/data-status/page.tsx` and
 `src/lib/actions/admin.ts`'s `triggerDataImport` have no `auth()` call at
 all — any visitor, signed in or not, can view connector internals (last run
@@ -59,8 +76,9 @@ authorized one succeeds.
 **Blockers**: none technical; needs a product decision on the access model.
 **Notes**: this is the single highest-value fix found in this audit.
 
-### TASK-005 — Fix "Run now" throwing an unhandled error for unimplemented data sources
-**Status**: Open (discovered, not fixed).
+### TASK-005 / `T-005` — Fix "Run now" throwing an unhandled error for unimplemented data sources
+**Status**: Open (discovered, not fixed). **This is the current task** — see
+"Current task" above.
 **Description**: `src/app/(app)/admin/data-status/page.tsx` renders a "Run
 now" button (`RunImportButton`) for every `DataSource` where
 `!s.requiresApiKey`. Four seeded sources — `world-bank`, `oecd`, `ilo`,
@@ -70,7 +88,7 @@ for any of them calls `triggerDataImport(slug)` →
 `runDataImport(slug)` (`src/lib/providers/run-import.ts`), which does
 `if (!provider || !dataSource) throw new Error(...)` with no surrounding
 try/catch in either `runDataImport` or the calling Server Action — this
-throws inside the transition with no catch in `run-import-button.tsx`
+throws inside the transition with no catch in `src/components/run-import-button.tsx`
 either, so the click fails ungracefully instead of showing a toast error.
 **Relevant files**: `src/lib/actions/admin.ts`,
 `src/lib/providers/run-import.ts`, `src/components/run-import-button.tsx`,
@@ -144,19 +162,40 @@ higher-priority work.
 ## Low priority
 
 ### TASK-006 — Verify (or add) a delete-confirmation dialog on account deletion
-**Status**: Open (discovered as "unable to verify," not confirmed as a bug).
-**Description**: `deleteAccountAction` (`src/lib/actions/account.ts`)
-hard-deletes the signed-in user's `User` row with no server-side
-confirmation step. This audit read `src/lib/actions/account.ts` but did not
-do a deep read of `src/components/delete-account-button.tsx` to confirm
-whether it wraps the click in an `AlertDialog` (the primitive exists in
-`src/components/ui/alert-dialog.tsx`) before calling the action.
+**Status**: **Resolved — confirmed not a bug [Verified 2026-08-17].**
+`src/components/delete-account-button.tsx` was read in full this pass: it
+already wraps the delete action in an `AlertDialog` (title "Delete your
+account?", explicit "This cannot be undone" description, Cancel/Delete
+buttons, `deleteAccountAction()` only called from the confirm button's
+`onClick`). No code change needed. Left in the backlog as a closed record
+rather than deleted, so a future session doesn't re-open the same question.
+**Description** (original, for history): `deleteAccountAction`
+(`src/lib/actions/account.ts`) hard-deletes the signed-in user's `User` row;
+this audit had not yet confirmed whether the button wrapped it in a
+confirmation dialog.
 **Relevant files**: `src/components/delete-account-button.tsx`,
 `src/components/ui/alert-dialog.tsx`.
-**Acceptance criteria**: read `delete-account-button.tsx` fully; if no
-confirmation step exists, add one using the existing `AlertDialog`
-primitive before calling `deleteAccountAction`.
-**Dependencies**: none. **Blockers**: none.
+
+### TASK-007 — Fix stale "not yet wired" comments in `.env.example`
+**Status**: Open (discovered 2026-08-17, not fixed — config file, out of
+scope for a documentation-only pass).
+**Description**: `.env.example`'s inline comments for `CENSUS_API_KEY` and
+`COLLEGE_SCORECARD_API_KEY` still read "Not yet wired to a connector —
+reserved for a future ... importer." Both connectors were implemented in
+commits `fd94d85` (2026-07-31) and `90ef269` (2026-08-01) —
+`src/lib/providers/census-acs-provider.ts` and
+`src/lib/providers/college-scorecard-provider.ts` both exist and are
+registered in `src/lib/providers/registry.ts`. The comment wording predates
+both implementations and was never updated (confirmed via
+`git log --follow -p -- .env.example`).
+**Relevant files**: `.env.example` (lines documenting `CENSUS_API_KEY` and
+`COLLEGE_SCORECARD_API_KEY`).
+**Acceptance criteria**: comments accurately describe both as working,
+optional (keyless-degrades-gracefully is false for these two — they require
+the key to run at all) connectors, matching the table in `CLAUDE.md` →
+Environment setup.
+**Dependencies**: none. **Blockers**: none. Same category of staleness as
+TASK-002 (README), just a different file.
 
 ## Bugs
 
@@ -182,8 +221,8 @@ primitive before calling `deleteAccountAction`.
 
 ## Testing needed
 
-- Unit tests for `accessibility-score.ts`, `career-value-score.ts`,
-  `salary-opportunity-score.ts` (TASK-003).
+- Unit tests for `src/lib/scoring/accessibility-score.ts`, `src/lib/scoring/career-value-score.ts`,
+  `src/lib/scoring/salary-opportunity-score.ts` (TASK-003).
 - A verified (disposable-database) run of `npm run test:e2e` — never run
   this audit against the live-configured `DATABASE_URL`.
 - A verified (disposable-database) run of `npm run build` — never run this

@@ -14,14 +14,14 @@ not live interaction — flagged per feature where that matters.
 country, metro (with cost-of-living adjustment).
 **Status: Verified complete** (statically traced).
 - Frontend: `src/app/(app)/salary/page.tsx`,
-  `salary-filters.tsx` (role/industry/seniority/country/metro selects),
-  `salary-results-table.tsx`.
+  `src/app/(app)/salary/salary-filters.tsx` (role/industry/seniority/country/metro selects),
+  `src/app/(app)/salary/salary-results-table.tsx`.
 - Backend: `src/lib/data/salary.ts`.
 - Scoring: `src/lib/scoring/cost-of-living.ts` (unit-tested).
 - DB: `SalaryPercentile`, `SalaryObservation`, `CostOfLivingIndex`.
 - Validation: filter inputs come from typed `<Select>` options, not free text.
 - Data status: every row carries `dataStatus`, rendered via
-  `data-status-badge.tsx`.
+  `src/components/data-status-badge.tsx`.
 - Known issue: none found.
 
 ## Role Detail (`/roles/[role]`)
@@ -30,7 +30,7 @@ country, metro (with cost-of-living adjustment).
 skills, certifications, salary by seniority, education requirements, save
 button.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/roles/[role]/page.tsx`, `role-salary-section.tsx`
+- Frontend: `src/app/(app)/roles/[role]/page.tsx`, `src/app/(app)/roles/[role]/role-salary-section.tsx`
   (seniority selector), `src/components/save-career-button.tsx`.
 - Backend: `src/lib/data/occupations.ts`.
 - Auth: save/unsave requires sign-in (`toggleSavedOccupation`); page itself
@@ -44,7 +44,7 @@ button.
 **Purpose**: browse the taxonomy (Industry → Subindustry → Occupation), with
 search/filter.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/roles/page.tsx` + `role-filters.tsx`,
+- Frontend: `src/app/(app)/roles/page.tsx` + `src/app/(app)/roles/role-filters.tsx`,
   `src/app/(app)/careers/page.tsx` and nested `[industry]`/`[subindustry]`
   pages.
 - Backend: `src/lib/data/industries.ts`, `src/lib/data/occupations.ts`.
@@ -68,7 +68,7 @@ search/filter.
 **Purpose**: show where people in a role typically move next, salary delta,
 compatibility/difficulty scores, skill gaps, and a visual transition graph.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/transitions/page.tsx` + `transition-table.tsx`,
+- Frontend: `src/app/(app)/transitions/page.tsx` + `src/app/(app)/transitions/transition-table.tsx`,
   `src/app/(app)/transitions/[from]/[to]/page.tsx`,
   `src/components/transition-graph.tsx` (hand-rolled SVG radial graph, not a
   charting library — positions up to 8 nodes around a center node, colored
@@ -83,9 +83,9 @@ compatibility/difficulty scores, skill gaps, and a visual transition graph.
 **Purpose**: compare degrees/majors/bootcamps by entry salary, ROI, and
 break-even year; user-adjustable cost/years/forgone-earnings overrides.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/education/page.tsx` + `education-filters.tsx`,
+- Frontend: `src/app/(app)/education/page.tsx` + `src/app/(app)/education/education-filters.tsx`,
   `src/app/(app)/education/compare/page.tsx` +
-  `education-compare-tool.tsx` (client component: up to 4 comparison slots,
+  `src/app/(app)/education/compare/education-compare-tool.tsx` (client component: up to 4 comparison slots,
   editable cost/years/forgone-earnings per slot, 10 vs. 20-year horizon
   toggle).
 - Backend: `src/lib/data/education.ts`.
@@ -102,7 +102,7 @@ break-even year; user-adjustable cost/years/forgone-earnings overrides.
 **Purpose**: leaderboard of industries by a 9-factor, user-explorable
 momentum score, with trailing quarterly trend.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/trends/page.tsx`, `momentum-leaderboard.tsx`.
+- Frontend: `src/app/(app)/trends/page.tsx`, `src/app/(app)/trends/momentum-leaderboard.tsx`.
 - Backend: `src/lib/data/trends.ts`.
 - Scoring: `src/lib/scoring/momentum-score.ts` (`DEFAULT_MOMENTUM_WEIGHTS`,
   unit-tested).
@@ -123,7 +123,7 @@ conservative/expected/aggressive scenarios, with user-adjustable sliders
 growth) and a live BLS wage-growth default.
 **Status: Verified complete.**
 - Frontend: `src/app/(app)/projection/page.tsx`,
-  `projection-calculator.tsx` (client component, `useMemo`-computed results
+  `src/app/(app)/projection/projection-calculator.tsx` (client component, `useMemo`-computed results
   table + `SalaryTrendChart`).
 - Scoring: `src/lib/scoring/projection.ts` (unit-tested), called both
   client-side here (live recompute on slider change) and in
@@ -138,10 +138,10 @@ growth) and a live BLS wage-growth default.
 **Purpose**: put up to 5 occupations side by side on pay/growth/
 accessibility/flexibility, save a comparison, share via URL.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/compare/page.tsx`, `compare-selector.tsx`
+- Frontend: `src/app/(app)/compare/page.tsx`, `src/app/(app)/compare/compare-selector.tsx`
   (debounced search-and-add, URL state via `?roles=slug1,slug2`, capped at
   5), `src/components/charts/comparison-bar-chart.tsx` and
-  `comparison-radar-chart.tsx`, `src/components/save-comparison-button.tsx`.
+  `src/components/charts/comparison-radar-chart.tsx`, `src/components/save-comparison-button.tsx`.
 - Backend: `src/lib/data/compare.ts`.
 - Actions: `saveComparison`/`deleteSavedComparison` (auth-required).
 - DB: `SavedComparison` (nullable `userId` in schema — the model itself
@@ -159,6 +159,21 @@ export.
 - Backend: `src/lib/data/saved.ts`.
 - Export: `GET /api/export/saved` — auth-gated, CSV with proper
   quote-escaping (`csvEscape`).
+- As of `fb450a0` (2026-08-15), `src/components/save-career-button.tsx`
+  triggers a cosmetic CSS "pop" animation (defined in `src/app/globals.css`) on
+  save — no functional change.
+
+## SEO / social-sharing metadata (added `fb63183`, 2026-08-13)
+
+**Purpose**: OpenGraph/Twitter card metadata (`src/app/layout.tsx`'s
+`Metadata` export), a generated social-preview image
+(`src/app/opengraph-image.tsx`), `robots.txt`
+(`src/app/robots.ts`), and `sitemap.xml` (`src/app/sitemap.ts`). Not
+previously documented in this file set.
+**Status: [Inferred] complete** — files exist, follow the standard Next.js
+metadata-route conventions, and are wired into the root layout; not
+independently verified by fetching `/robots.txt`/`/sitemap.xml`/
+`/opengraph-image` from a running server this session.
 
 ## Dashboard (`/dashboard`)
 
@@ -180,7 +195,7 @@ users (personalized sections conditionally fetched only `if (userId)`).
 location, salary goal, current salary, years experience, degree, major,
 company size, skills CSV) that personalizes the dashboard.
 **Status: Verified complete.**
-- Frontend: `src/app/(app)/profile/page.tsx`, `profile-form.tsx`.
+- Frontend: `src/app/(app)/profile/page.tsx`, `src/app/(app)/profile/profile-form.tsx`.
 - Backend: `upsertProfile` Server Action (`src/lib/actions/profile.ts`) —
   auth-required, upserts `UserProfile` 1:1 with `User`.
 - Validation: manual (not Zod) — reads `FormData` with typed `num()`/`str()`
@@ -207,7 +222,7 @@ company size, skills CSV) that personalizes the dashboard.
 
 **Purpose**: email+password auth.
 **Status: Verified complete.**
-- Frontend: `src/app/(auth)/sign-in/page.tsx`, `sign-up/page.tsx`.
+- Frontend: `src/app/(auth)/sign-in/page.tsx`, `src/app/(auth)/sign-up/page.tsx`.
 - Backend: `src/lib/actions/auth.ts` (Zod validation, bcrypt hashing,
   duplicate-email check, generic invalid-credentials error), `src/lib/auth.ts`
   (NextAuth Credentials config).
@@ -236,15 +251,24 @@ reported/estimated/forecast/simulated status system.
 
 **Purpose**: connector health dashboard — last success/attempt, rows
 imported/rejected, quality warnings, manual "Run now" trigger per source.
-**Status: Verified complete functionally, but Broken from a security
-standpoint** — see `SECURITY.md` and `TASKS.md` TASK-001. The feature does
-exactly what it's supposed to do; it just does it for anyone, not just an
-admin, because no auth/authorization check exists anywhere in its call path
-(`page.tsx` → `listDataSourceStatus`/`listEconomicIndicators`,
-`run-import-button.tsx` → `triggerDataImport`).
+**Status: Verified complete, TASK-001 fixed `80a7961` (2026-08-13).** The
+status page itself stays public/read-only by design (connector status, env
+var names, and public economic indicators are treated as a legitimate
+public status surface — a deliberate product decision, not an oversight).
+The actual mutation boundary, `triggerDataImport`, now requires
+`isAdminSession()` (`src/lib/admin-auth.ts`, checks the caller's email
+against the `ADMIN_EMAILS` allowlist, fails closed) — verified by reading
+both `src/lib/actions/admin.ts` and `src/lib/admin-auth.ts` directly.
+`RunImportButton` is also hidden from non-admins in the UI as a cosmetic
+match to the real server-side gate. Rendered error/warning strings are now
+passed through `sanitizeErrorText()` (`src/lib/sanitize.ts`) before display.
+**Still open**: clicking "Run now" for a seeded-but-unregistered source
+(World Bank/OECD/ILOSTAT/Eurostat) still throws an unhandled error — see
+`TASKS.md` TASK-005.
 - Frontend: `src/app/(app)/admin/data-status/page.tsx`,
   `src/components/run-import-button.tsx`.
-- Backend: `src/lib/data/admin.ts`, `src/lib/actions/admin.ts`.
+- Backend: `src/lib/data/admin.ts`, `src/lib/actions/admin.ts`,
+  `src/lib/admin-auth.ts`, `src/lib/sanitize.ts`.
 
 ## Live data connectors (BLS CES, BLS OEWS, O*NET, Revelio RPLS, Census ACS, College Scorecard)
 
@@ -252,7 +276,7 @@ admin, because no auth/authorization check exists anywhere in its call path
 where available.
 **Status: Verified complete** for all six — each implements the full
 `DataProvider` contract (`fetchData → normalizeData → validateData →
-upsertData`), is registered in `registry.ts`, has a `DataSource` seed row,
+upsertData`), is registered in `src/lib/providers/registry.ts`, has a `DataSource` seed row,
 and (where required) documents its env var in `.env.example`.
 - `bls-ces` / `bls-oews` / `onet` / `revelio-rpls`: keyless, always
   "configured."
@@ -303,7 +327,7 @@ future change). Confirmed `@supabase/*` packages are absent from
 Momentum Score but not yet for Career Value Score.
 `src/lib/scoring/career-value-score.ts` exists (combines sub-scores into one
 number) but has no unit test, and this audit did not locate a
-drag-and-drop UI component for it (only `momentum-score.ts`'s weights are
+drag-and-drop UI component for it (only `src/lib/scoring/momentum-score.ts`'s weights are
 visibly surfaced via `DEFAULT_MOMENTUM_WEIGHTS` in the seeded
 `weights` JSON column). Treat as **Unable to verify** whether any partial
 UI exists beyond the underlying scoring function, without a deeper
