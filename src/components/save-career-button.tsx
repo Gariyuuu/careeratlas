@@ -28,7 +28,7 @@ export function SaveCareerButton({ occupationSlug, initiallySaved = false }: { o
 
   return (
     <Button variant="outline" onClick={onClick} disabled={pending}>
-      {saved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
+      {saved ? <BookmarkCheck className="size-4 fx-bookmark-pop" /> : <Bookmark className="size-4" />}
       {saved ? "Saved" : "Save career"}
     </Button>
   );
