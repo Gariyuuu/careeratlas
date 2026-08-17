@@ -64,7 +64,7 @@ place rather than left contradicting each other.
 - Still no `User.role` field or Prisma-level role/permission model — the
   fix above is an **env-var allowlist**, not a schema-backed role, per the
   commit's explicit note that it avoids a schema change (see `DECISIONS.md`
-  if a decision entry was recorded for this trade-off).
+  DEC-012 for the full rationale and its consequences).
 
 ## Protected routes
 

@@ -1,10 +1,78 @@
 # CHANGELOG.md — Repository / Engineering Changelog
 
-No `CHANGELOG.md` existed before this audit. There is no user-facing
-version-numbering scheme anywhere in the repo (`package.json`'s
-`"version": "0.1.0"` has never been bumped across any commit). This file
-starts here; entries below are either this audit's own work or reconstructed
-from `git log` — nothing is invented.
+No `CHANGELOG.md` existed before the 2026-08-06 audit. There is no
+user-facing version-numbering scheme anywhere in the repo (`package.json`'s
+`"version": "0.1.0"` has never been bumped across any commit). Entries below
+are either a documentation pass's own work or reconstructed from `git log`
+— nothing is invented.
+
+## 2026-08-17 — Documentation re-verification (onboarding pass)
+
+Onboarding-mode pass: arrived at the repo, found the existing 19-file
+memory doc set had not been touched since `d4c16f7`/`6ebad6b`
+(2026-08-06/07) while 6 more commits of real product work had landed
+(`80a7961` through `63a5a6f`, 2026-08-13 to 2026-08-16). Re-verified every
+open finding against current code and git history and corrected the
+resulting drift. No application code was touched.
+
+**Most significant correction**: the doc set still described TASK-001
+(missing auth on `/admin/data-status`/`triggerDataImport`, the headline
+finding of the entire 2026-08-06 security review) as open. It had actually
+been fixed 4 days earlier, in commit `80a7961` — `triggerDataImport` now
+requires `isAdminSession()` (new `src/lib/admin-auth.ts`, gated by an
+`ADMIN_EMAILS` allowlist that fails closed); `/admin/data-status` itself
+stays intentionally public by product decision. Corrected in `CLAUDE.md`,
+`SECURITY.md`, `TASKS.md`, `PROJECT_STATE.md`, `HANDOFF.md`, `FEATURES.md`,
+`API_REFERENCE.md`, and `FILE_MAP.md`.
+
+**Other corrections**:
+- `TASKS.md` TASK-006 (delete-account confirmation, previously "unable to
+  verify") — read `src/components/delete-account-button.tsx` in full; it already wraps the
+  delete in an `AlertDialog`. Resolved, not a bug.
+- Two new, previously-undocumented features from the same commit range now
+  described: OpenGraph/Twitter metadata + generated `opengraph-image` +
+  `src/app/robots.ts` + `src/app/sitemap.ts` (`fb63183`); a cosmetic bookmark-pop animation
+  on `src/components/save-career-button.tsx` (`fb450a0`). Neither changes app behavior in
+  a way that affects other findings.
+- `CLAUDE.md`'s "no `console.*` in `src/`" convention line was itself
+  stale — `80a7961` deliberately added one `console.warn` (an
+  unauthorized-admin-action denial). Documented as an intentional, sole
+  exception rather than silently left contradicting the code.
+- Git state (`CLAUDE.md`, `PROJECT_STATE.md`, `HANDOFF.md`) updated from
+  HEAD `d4c16f7`/9 commits to HEAD `63a5a6f`/16 commits.
+
+**New finding (not previously flagged)**: `.env.example`'s
+`CENSUS_API_KEY`/`COLLEGE_SCORECARD_API_KEY` comments still say "not yet
+wired to a connector" — the same staleness as `README.md`'s TASK-002, but
+in a config file, predating both connector implementations and never
+caught before. Tracked as new `TASKS.md` TASK-007.
+
+**Re-verified unchanged/still open**: `npm run lint` (1 harmless warning),
+`npx tsc --noEmit` (0 errors), `npm run test` (34/34) all still pass;
+TASK-002 (`README.md` still stale), TASK-003 (3 of 10 scoring functions
+still untested), TASK-004 (~17 unused env vars in `.env.local`), TASK-005
+(unhandled error on "Run now" for unregistered sources) all re-confirmed
+genuinely still open. No secrets found in any tracked file or
+documentation file; no application code changed.
+
+Full session detail: `SESSION_LOG.md`'s 2026-08-17 entry.
+
+## 2026-08-13 to 2026-08-16 — Product work (not a documentation pass, reconstructed from `git log`)
+
+- **2026-08-16** — `63a5a6f`: merge `chore/polish` into `main`.
+- **2026-08-15** — `fb450a0`: add a cosmetic CSS "pop" animation to the
+  save-career button.
+- **2026-08-15** — `498fd2c`: merge `chore/metadata-og` (site metadata, OG
+  card, robots, sitemap) into `main`.
+- **2026-08-13** — `2b26360`: merge `chore/admin-auth` (gate data-import
+  behind an admin allowlist) into `main`.
+- **2026-08-13** — `fb63183`: add OpenGraph metadata, `src/app/sitemap.ts`,
+  `src/app/robots.ts`.
+- **2026-08-13** — `80a7961`: fix TASK-001 — gate `triggerDataImport`
+  behind a new `ADMIN_EMAILS` allowlist (`src/lib/admin-auth.ts`) rather
+  than adding auth to the status page itself; also adds
+  `src/lib/sanitize.ts` for rendered error/warning text. Full rationale in
+  the commit message; summarized in `SECURITY.md`.
 
 ## 2026-08-07 — Documentation re-verification / final transfer checkpoint
 

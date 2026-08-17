@@ -176,6 +176,22 @@ confirmation dialog.
 **Relevant files**: `src/components/delete-account-button.tsx`,
 `src/components/ui/alert-dialog.tsx`.
 
+### TASK-007 — Fix stale connector comments in `.env.example`
+**Status**: Open (new finding, 2026-08-17).
+**Description**: `.env.example`'s inline comments for `CENSUS_API_KEY` and
+`COLLEGE_SCORECARD_API_KEY` still read "Not yet wired to a connector —
+reserved for a future ... importer." Both connectors have been implemented
+since commits `fd94d85`/`90ef269` (2026-07-31/2026-08-01) — same underlying
+staleness as TASK-002, but in a config file rather than `README.md`, and
+not previously flagged (confirmed via `git log --follow -p -- .env.example`
+that this wording predates both connectors and was never updated).
+**Relevant files**: `.env.example`.
+**Acceptance criteria**: the two comments describe the connectors as
+implemented and explain what the key unlocks (matches
+`CLAUDE.md`'s "Environment setup" table wording), not as unimplemented.
+**Dependencies**: none. **Blockers**: none. **Priority note**: cosmetic/
+low-stakes, same tier as TASK-004.
+
 ### TASK-007 — Fix stale "not yet wired" comments in `.env.example`
 **Status**: Open (discovered 2026-08-17, not fixed — config file, out of
 scope for a documentation-only pass).
@@ -234,15 +250,19 @@ TASK-002 (README), just a different file.
 ## Documentation needed
 
 - `README.md` needs the TASK-002 fix (stale "not implemented" list).
-- Beyond that, this audit itself is the documentation deliverable — the 17
-  files listed in `CHANGELOG.md`'s audit entry.
+- `.env.example` needs the TASK-007 fix (same staleness, different file).
+- Beyond that, this audit itself (plus the 2026-08-17 re-verification pass)
+  is the documentation deliverable — see `CHANGELOG.md`'s entries.
 
 ## Recently completed (from git history, not this audit)
 
+- Fix TASK-001 — gate `triggerDataImport` behind `ADMIN_EMAILS` (`80a7961`,
+  2026-08-13). See `SECURITY.md`.
+- Add OpenGraph metadata, sitemap, robots.txt (`fb63183`, 2026-08-13).
+- Add bookmark pop animation to save-career button (`fb450a0`, 2026-08-15).
+- Docs staleness-fix pass, 2026-08-07 checkpoint (`6ebad6b`).
 - Commit the 2026-08-06 documentation audit's 17-file doc set (`d4c16f7`,
-  2026-08-06) — see `CHANGELOG.md`. A 2026-08-07 checkpoint pass then fixed
-  staleness the commit itself introduced (see `SESSION_LOG.md`'s latest
-  entry).
+  2026-08-06) — see `CHANGELOG.md`.
 - Add custom favicon (`0b10636`, 2026-08-06).
 - Add Census ACS connector (`90ef269`, 2026-08-01).
 - Add College Scorecard connector (`fd94d85`, 2026-07-31).

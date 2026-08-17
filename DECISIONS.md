@@ -176,3 +176,29 @@ trusting the entire dependency tree by default.
 added, this field will need a corresponding entry or that dependency's
 scripts silently won't run (which could cause confusing native-binary
 build failures, e.g. for another native module beyond `sharp`/`fsevents`).
+
+### DEC-012 — Admin gate is an env-var email allowlist, not a schema-backed role
+**Status**: Verified (full reasoning stated in commit `80a7961`'s message,
+2026-08-13, "fix: gate the admin data-import action, not the status page
+(TASK-001)").
+**Decision**: `triggerDataImport` (`src/lib/actions/admin.ts`) is gated by
+`isAdminSession()` (`src/lib/admin-auth.ts`), which checks the signed-in
+user's email against a comma-separated `ADMIN_EMAILS` env var,
+case-insensitively, failing closed if the var is unset or empty. No
+`User.role` column was added to `prisma/schema.prisma`. `/admin/data-status`
+(the page itself) was deliberately left public — connector status, env var
+*names*, and public economic indicators were judged a legitimate public
+status surface, not something worth gating.
+**Reasoning (verified via commit message)**: avoids a schema migration for
+what is, on this project, a single-operator "admin" concept; an env var is
+simpler to reason about and to change (add/remove an email) without a
+deploy-time data migration. The commit explicitly cites "no schema change —
+no `User.role` column, per the file's DO-NOT-CHANGE-WITHOUT-REVIEW note in
+`CLAUDE.md`" as a deliberate constraint, not an oversight.
+**Consequence**: this does not generalize to a real multi-tenant role
+system — if the project ever needs more than one class of privileged user,
+or self-service admin management (rather than editing an env var and
+redeploying), this decision should be revisited and `SECURITY.md`'s
+"residual gaps" note re-read first. Also means the admin allowlist lives
+outside the database — auditing "who is currently an admin" requires
+reading the deployed env var, not querying the `User` table.

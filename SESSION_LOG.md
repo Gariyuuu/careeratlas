@@ -186,6 +186,79 @@ before committing, not before.
 
 ---
 
+## 2026-08-17 — Onboarding-mode documentation re-verification
+
+**Account/agent**: unknown (Claude Code session; identity string not
+provided; git author on the repo's commits is Gary Wang,
+`garywangsmes@gmail.com`, several co-authored by prior Claude sessions).
+
+**Goal**: onboard to `careeratlas` cold (repo-memory skill, onboard mode —
+the core 19 memory files existed and looked substantively real, so this was
+not an init pass) and verify the existing doc set against current repo
+state before it could be trusted for further work.
+
+**Files inspected**: all 19 existing memory files in full; `git log`/
+`git show --stat`/full diffs for every commit since `d4c16f7` (`6ebad6b`,
+`80a7961`, `fb63183`, `2b26360`, `498fd2c`, `fb450a0`, `63a5a6f`);
+`src/lib/actions/admin.ts`, `src/lib/admin-auth.ts` (new file),
+`src/lib/sanitize.ts` (new file), `src/app/(app)/admin/data-status/page.tsx`,
+`src/components/run-import-button.tsx`, `src/lib/providers/run-import.ts`,
+`src/app/layout.tsx`, `src/app/opengraph-image.tsx` (new),
+`src/app/robots.ts` (new), `src/app/sitemap.ts` (new),
+`src/components/save-career-button.tsx`,
+`src/components/delete-account-button.tsx`, `README.md`, `.env.example`,
+`.env.local` (variable names only), `package.json`.
+
+**Files changed**: `CLAUDE.md`, `PROJECT_STATE.md`, `TASKS.md`,
+`HANDOFF.md`, `SECURITY.md`, `FEATURES.md`, `API_REFERENCE.md`,
+`FILE_MAP.md`, `CHANGELOG.md`, this file — all corrected for the drift
+described below; no file was wholesale-rewritten, existing accurate content
+was kept.
+
+**Commands run**: `git log`/`git show` (read-only), `npm run lint` (pass, 1
+harmless warning), `npx tsc --noEmit` (pass, 0 errors), `npm run test`
+(pass, 34/34) — all matching the previously-documented baseline exactly.
+
+**Tests run**: Vitest unit suite only (`npm run test`), as above. Did not
+run `npm run build` or `npm run test:e2e` — same live-`DATABASE_URL`
+caution as every prior session, unchanged this pass.
+
+**Results**: confirmed the doc set was 6 commits stale. The single most
+important correction: TASK-001 (missing auth on `/admin/data-status` /
+`triggerDataImport`, the headline finding of the 2026-08-06 security
+review) was still described as open everywhere, but had actually been
+fixed on 2026-08-13 in commit `80a7961`. Also found TASK-006 (delete
+confirmation, previously "unable to verify") is resolved — the dialog
+already exists. Also found a new, previously-unflagged staleness in
+`.env.example` itself (not just `README.md`).
+
+**Decisions made**: none new this session — the admin-auth design decision
+(env-var allowlist vs. a schema role) was made by the `80a7961` commit
+itself, prior to this session, not by this documentation pass. Logged
+retroactively as `DECISIONS.md` DEC-012 (Verified, using the commit's own
+message as the primary source) since it was a real architectural decision
+that had gone unrecorded.
+
+**Problems found**: new `TASKS.md` TASK-007 (`.env.example`'s Census
+ACS/College Scorecard comments are stale, same issue as TASK-002 in a
+different file). No new bugs found in application code.
+
+**Work completed**: full re-verification and correction pass across the
+core memory files plus `SECURITY.md`/`FEATURES.md`/`API_REFERENCE.md`/
+`FILE_MAP.md`; `verify_docs.py` run clean before finishing.
+
+**Work remaining**: TASK-002 (`README.md` stale), TASK-003 (3 scoring
+functions untested), TASK-004 (unused `.env.local` vars), TASK-005
+(unhandled error on unregistered "Run now" sources — **current task**),
+TASK-007 (`.env.example` stale) — all still open, all re-confirmed
+genuinely open this session, none fixed (documentation-only pass).
+
+**Recommended next action**: TASK-005 (`T-005`) — fix the unhandled error
+when "Run now" is clicked for a seeded-but-unregistered data source. See
+`TASKS.md` for full acceptance criteria.
+
+---
+
 ## Template for future entries
 
 ## YYYY-MM-DD — <short goal description>

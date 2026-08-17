@@ -77,18 +77,23 @@ data connectors, and the daily Vercel Cron job. `npm run lint`,
 
 ## What is broken?
 
-Nothing crashes or fails outright based on static review, but two real
-issues were found:
+Nothing crashes or fails outright based on static review. One real issue
+remains open (a second was closed since the last checkpoint, a third
+turned out not to be a bug):
 1. ~~`/admin/data-status` + `triggerDataImport` have no auth check at
    all`~~ — **fixed** `80a7961` (2026-08-13), TASK-001 closed. See
    `SECURITY.md`.
 2. **The admin page's "Run now" button, when clicked for World Bank/OECD/
-   ILOSTAT/Eurostat** (4 seeded-but-unimplemented data sources), throws an
-   unhandled error instead of failing gracefully. (TASK-005, `TASKS.md`.)
+   ILOSTAT/Eurostat** (4 seeded-but-unimplemented data sources), still
+   throws an unhandled error instead of failing gracefully. **This is the
+   current task** (TASK-005 / `T-005`, `TASKS.md`).
+3. ~~Account deletion might lack a confirmation dialog~~ — **[Verified
+   2026-08-17] confirmed not a bug**: `src/components/delete-account-button.tsx` already
+   wraps the delete in an `AlertDialog`. TASK-006 resolved.
 
-Additionally, `README.md` (the user-facing doc, separate from this
-AI-facing set) is stale about which connectors are implemented (TASK-002),
-and 3 of 10 scoring functions have no unit tests (TASK-003).
+Additionally, `README.md` (TASK-002) and, newly found 2026-08-17,
+`.env.example` itself (TASK-007) are both stale about which connectors are
+implemented; 3 of 10 scoring functions still have no unit tests (TASK-003).
 
 ## What should I do next?
 
@@ -169,11 +174,15 @@ Then, independently:
 1. Run `git status`, `git log -5`, and (if a remote is configured)
    `git fetch origin` read-only, and compare against what PROJECT_STATE.md
    claims — flag any contradiction before doing anything else. As of the
-   2026-08-07 checkpoint, HEAD is `d4c16f7` ("docs: add full handoff
-   documentation system", 9 commits total on main) and the tree is clean.
+   2026-08-17 re-verification pass, HEAD is `63a5a6f` ("Merge branch
+   'chore/polish' into main", 16 commits total on main) and the tree was
+   clean before any memory-doc commit. This doc set has already been caught
+   describing a 6-commit-stale HEAD once (see `CHANGELOG.md`'s 2026-08-17
+   entry) — don't assume this line stays accurate without re-checking.
 2. Run `npm run lint && npx tsc --noEmit && npm run test` and confirm they
-   still pass (they did as of both the 2026-08-06 audit and the 2026-08-07
-   checkpoint: 1 harmless lint warning, 0 type errors, 34/34 unit tests).
+   still pass (they did as of the 2026-08-06 audit, the 2026-08-07
+   checkpoint, and the 2026-08-17 pass: 1 harmless lint warning, 0 type
+   errors, 34/34 unit tests).
 3. Summarize your understanding of the current state and the task you're
    about to do back to the user BEFORE editing anything, and explicitly
    flag any documentation you find stale, contradictory, or unverifiable
