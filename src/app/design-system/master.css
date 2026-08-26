@@ -171,21 +171,70 @@
    * in authored code; vendored components/ui/ is OUT OF SCOPE by policy.  */
   .transition-ui { transition: var(--transition-ui); }
 
-  /* ---- Reduced motion --------------------------------------------------
-   * Deliberately NOT a blanket `animation: none`. Two verified traps:
-   *  - killing an animation whose final keyframe is opacity:0 resolves the
-   *    element to INVISIBLE (vantage-chess .fx-stamp)
-   *  - information-bearing feedback must survive (buildstrike hit markers)
-   * Opt OUT with [data-motion-critical] rather than opting everything in.  */
-  @media (prefers-reduced-motion: reduce) {
-    *:not([data-motion-critical]),
-    *:not([data-motion-critical])::before,
-    *:not([data-motion-critical])::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+}
+
+/* ---- Reduced motion (v1.1: MOVED OUT OF @layer base) ------------------------
+ * Deliberately NOT a blanket `animation: none`. Two verified traps:
+ *  - killing an animation whose final keyframe is opacity:0 resolves the
+ *    element to INVISIBLE (vantage-chess .fx-stamp)
+ *  - information-bearing feedback must survive (buildstrike hit markers)
+ * Opt OUT with [data-motion-critical] rather than opting everything in.
+ *
+ * DELIBERATELY UNLAYERED, and this one is not cosmetic -- v1.0 shipped it
+ * inside @layer base and that SILENTLY KILLED EVERY REPO'S OWN EXEMPTIONS.
+ *
+ * For `!important` declarations the cascade-layer order is REVERSED: an
+ * important declaration inside a layer BEATS an important unlayered one. So a
+ * repo's own hand-authored, unlayered
+ *     @media (prefers-reduced-motion: reduce) { .animate-spin { ... !important } }
+ * lost to this rule. Measured on promptforge in production: .animate-spin and
+ * .animate-pulse both resolved to animation-duration 1e-05s, iteration-count 1
+ * -- i.e. the loading spinners froze, which is precisely the "app looks
+ * frozen" failure README rule 3 exists to prevent, introduced BY the system.
+ *
+ * Unlayered, `*:not([data-motion-critical])` has the same (0,1,0) specificity
+ * as a repo's `.animate-spin`, and MASTER is imported FIRST -- so the repo's
+ * later rule wins on source order, exactly as it should. The system supplies a
+ * FLOOR a project can override, never a ceiling it cannot.
+ * Verified in a browser both ways before and after this change.
+ * -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *:not([data-motion-critical]),
+  *:not([data-motion-critical])::before,
+  *:not([data-motion-critical])::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* ---- THE EXEMPTIONS SHIP WITH THE GUARD (v1.1) ------------------------
+   * PLAYBOOK P02, stated as a portfolio rule: "never suppress loading
+   * spinners, skeleton shimmers, progress indicators, or any animation that
+   * is the only signal that work is in progress. Killing these makes the app
+   * look frozen. Reduced motion means less vestibular trigger, not less
+   * feedback." Three of five Phase 3 windows rediscovered this independently.
+   *
+   * v1.0 left exemptions to each repo. That is backwards: a repo with NO
+   * authored guard previously let its spinners run, and merely importing the
+   * system froze them. The floor must arrive with its own exemptions.
+   *
+   * Durations here are Tailwind's own defaults for these utilities
+   * (animate-spin 1s linear, animate-pulse 2s), so this restores the value
+   * the element already had rather than inventing one. Same specificity
+   * (0,1,0) as the clamp above but declared later, so it wins here -- and a
+   * REPO's rule, later still, wins over both. Override, never a ceiling.   */
+  .animate-spin,
+  [role="progressbar"],
+  [data-loading="true"] {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+  .animate-pulse,
+  [class*="skeleton" i],
+  [class*="shimmer" i] {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
