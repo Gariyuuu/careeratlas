@@ -1,7 +1,7 @@
-/* VENDORED from ~/Projects/.design-system/MASTER.css v1.1 — do not edit here.
+/* VENDORED from ~/Projects/.design-system/MASTER.css v1.2 — do not edit here.
  * Source of truth is the portfolio master. Re-vendor, never patch in place. */
 /* ============================================================================
- * PORTFOLIO MASTER DESIGN SYSTEM  v1.1
+ * PORTFOLIO MASTER DESIGN SYSTEM  v1.2
  * Seeded from ~/Projects/DESIGN-SYNTHESIS.md § CONSENSUS VALUES
  * (43 projects, 9 audit windows). Every value below is the measured plurality
  * of the portfolio, or an explicitly-flagged correction to it.
@@ -97,6 +97,7 @@
     --ring:        currentColor;  /* override per project; verify >= 3:1    */
 
     /* ---- v1.1: --input IS A UI COMPONENT BOUNDARY (WCAG 1.4.11) --------
+     * (unchanged in v1.2; see CHANGELOG.md)
      * SETTLED DECISION C7. See CONFLICTS.md.
      *
      * shadcn's vendored dark default is `--input: oklch(1 0 0 / 12%)`.
@@ -173,7 +174,7 @@
 
 }
 
-/* ---- Reduced motion (v1.1: MOVED OUT OF @layer base) ------------------------
+/* ---- Reduced motion (v1.2: MOVED OUT OF @layer base) ------------------------
  * Deliberately NOT a blanket `animation: none`. Two verified traps:
  *  - killing an animation whose final keyframe is opacity:0 resolves the
  *    element to INVISIBLE (vantage-chess .fx-stamp)
@@ -208,14 +209,14 @@
     scroll-behavior: auto !important;
   }
 
-  /* ---- THE EXEMPTIONS SHIP WITH THE GUARD (v1.1) ------------------------
+  /* ---- THE EXEMPTIONS SHIP WITH THE GUARD (v1.2) ------------------------
    * PLAYBOOK P02, stated as a portfolio rule: "never suppress loading
    * spinners, skeleton shimmers, progress indicators, or any animation that
    * is the only signal that work is in progress. Killing these makes the app
    * look frozen. Reduced motion means less vestibular trigger, not less
    * feedback." Three of five Phase 3 windows rediscovered this independently.
    *
-   * v1.0 left exemptions to each repo. That is backwards: a repo with NO
+   * v1.0 and v1.1 left exemptions to each repo. That is backwards: a repo with NO
    * authored guard previously let its spinners run, and merely importing the
    * system froze them. The floor must arrive with its own exemptions.
    *
