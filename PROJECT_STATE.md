@@ -1,5 +1,15 @@
 # PROJECT_STATE.md — Exact Handoff Snapshot
 
+> **Update 2026-09-05 — W9 UI/UX overhaul pass (uncommitted).**
+> This repo was polished as part of group **W9** of `~/Projects/OVERHAUL-GROUPS.md`
+> (numbers-first surfaces). Working tree is now **dirty and uncommitted**: 26
+> file(s) changed. Nothing was committed, pushed or deployed.
+> No product architecture, backend logic, schema, auth or route changes.
+> Full detail: this repo's `SESSION_LOG.md` (newest entry) and `UI_SYSTEM.md`.
+> Verification run this pass: `npx tsc --noEmit` 0 errors; `npm run lint` 0 errors / 1 pre-existing warning; `npm run test` 34/34. `build`/`test:e2e` not run (live Neon).
+> The group's shared tokens are a **new portfolio design-system layer**,
+> `~/Projects/.design-system/families/numerics.css` (v1.0). `MASTER.css` is unchanged.
+
 This file reflects the repository's exact state as of the **2026-08-17**
 onboarding-verification pass (superseding the 2026-08-06/07 snapshot below,
 which is kept for history). It is meant to be re-verified (`git status`,

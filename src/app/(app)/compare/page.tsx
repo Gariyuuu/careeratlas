@@ -94,7 +94,7 @@ export default async function ComparePage({
                     <TableCell key={r.slug} className="align-top">
                       <div className="flex flex-wrap gap-1 max-w-48">
                         {r.topSkills.map((s) => (
-                          <Badge key={s} variant="outline" className="text-[10px]">
+                          <Badge key={s} variant="outline" className="text-xs">
                             {s}
                           </Badge>
                         ))}

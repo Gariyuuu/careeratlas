@@ -242,3 +242,94 @@ Tailwind's responsive prefixes (`sm:`/`md:`/`lg:`) for grid column counts
 
 Not explicitly documented anywhere in the repo (no `.browserslistrc`, no
 stated support matrix). Relies on Next.js/Tailwind v4's own defaults.
+
+## The W9 numerics family layer (added 2026-09-05)
+
+**Source of truth:** `~/Projects/.design-system/families/numerics.css` (v1.0).
+**Vendored here as** ``src/app/design-system/numerics.css``, imported from ``src/app/globals.css`` immediately after
+`master.css`. The copy is byte-identical to the source apart from a two-line header.
+**Do not patch the vendored copy** — fix the source and re-vendor, exactly as with
+`MASTER.css`.
+
+### What it is
+
+A *family* layer, sitting between `MASTER.css` and per-project overrides:
+
+```
+MASTER.css  ->  families/numerics.css  ->  overrides/<project>.css  ->  this repo's globals.css
+```
+
+MASTER holds what all 115 portfolio repos need. A family layer holds what one kind of
+surface needs and no one else does. "Green means up" is meaningless in a 3D world or a
+narrative game; tabular numerals are wrong for prose. Twelve numbers-first repos share
+this one (see `~/Projects/OVERHAUL-GROUPS.md` group W9).
+
+### What it provides
+
+| Class | Use |
+|---|---|
+| `.num` | tabular figures on any element |
+| `.num-col` | right-aligned tabular column — **apply to the `<th>` and the `<td>`** |
+| `.num-mono` | monospaced identifier column (ticker, order id) with a slashed zero |
+| `.num-display` | a headline figure |
+| `.delta[data-dir="up\|down\|flat"]` | a signed change (see the rule below) |
+| `.delta-chip` | the same, as a filled pill |
+| `.spark` / `.spark-line` / `.spark-area` / `.spark-dot` | one sparkline stroke spec |
+| `.feed-card` + `-meta` / `-title` / `-body` / `-foot` / `-link` | the shared feed entry |
+| `.freshness[data-state="live\|stale\|offline\|loading"]` + `.freshness-dot` | refresh state |
+| `.no-data` + `.no-data-title` / `.no-data-body` | a surface with a known shape and nothing in it |
+| `.is-stale`, `.num-flash`, `.num-ghost` | stale region, value-change flash, ghost row |
+
+### The rule this layer exists to enforce
+
+**A signed number never states its direction in colour alone.** Red/green is the most
+common colour-vision collision (deuteranopia, ~6% of men) and every surface in this
+family is one where a sign is the point. `.delta` emits ▲/▼/– from `::before`, so a
+call site *cannot* forget it. If a surface genuinely cannot carry the glyph, use
+`data-cue="sign"` (explicit +/−) — still redundant, still non-colour. `data-cue="none"`
+exists only for values that already print their own sign, and using it is a decision to
+be justified, not a default.
+
+`content` is deliberately declared **twice** on `.delta::before`. The second is the
+CSS alt-text form (`content: "▲" / ""`), which marks the glyph decorative so assistive
+tech reads the number rather than "black up-pointing triangle" — but it is only
+understood by Chrome 77+, Firefox 118+, Safari 17.4+. In an older engine that whole
+declaration is invalid and the glyph would vanish, taking the accessible cue with it.
+The plain declaration is the fallback. Do not "clean up" the duplicate.
+
+### Dark mode is opt-in by selector
+
+Dark values attach only to `.dark`, `[data-theme="dark"]` and `[data-scheme="dark"]` —
+never to `prefers-color-scheme`, because a light-only app on a dark-OS machine would
+otherwise inherit the dark ramp on a white background and fail contrast everywhere.
+This repo uses `next-themes` with `attribute="class"`, which sets `.dark` — no extra hook needed.
+
+### Contrast
+
+Every family token clears **4.5:1 as text** on the MASTER surface stack in both ramps
+(light: up 4.67, down 5.13, flat 5.03, warn 4.54; dark: 8.04 / 5.28 / 5.69 / 7.45).
+Re-measure after any re-tint with `python3 ~/Projects/.design-system/tools/contrast.py <ink> <surface>`.
+
+### Numeric table columns
+
+`DataTable` (`src/components/data-table.tsx`) declares a typed column option:
+
+```ts
+{ accessorKey: "median", header: "Median", meta: { numeric: true } }
+```
+
+which applies `.num-col` to the header **and** the body cell together. Never set the
+alignment on only one of them — a right-aligned column under a left-aligned heading was
+the single most common table defect found across this group.
+
+### Charts
+
+`src/components/charts/chart-theme.ts` is the shared chart language: `TOOLTIP_STYLE`
+(with tabular figures), `AXIS_TICK`, `SERIES_DASH`, and `useChartAnimation()`.
+
+- **`useChartAnimation()` is not optional.** Recharts animates SVG attributes in
+  JavaScript, so MASTER's CSS reduced-motion clamp cannot reach it. Pass its result to
+  `isAnimationActive` on every animated series.
+- **`SERIES_DASH` is MASTER's pattern-before-hue rule.** `salary-trend-chart` used to
+  give its three scenario lines the same `"4 3"` dash, leaving them distinguished by
+  hue alone. Series `n` gets `SERIES_DASH[n]`.

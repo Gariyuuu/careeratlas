@@ -5,6 +5,7 @@ import { computeEducationRoi } from "@/lib/scoring/education-roi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Delta } from "@/components/numeric/delta";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DataStatusBadge } from "@/components/data-status-badge";
@@ -208,7 +209,13 @@ function Row({ label, value, positive }: { label: string; value: string; positiv
   return (
     <div className="flex justify-between">
       <span className="text-muted-foreground">{label}</span>
-      <span className={`font-medium ${positive === undefined ? "" : positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>{value}</span>
+      {positive === undefined ? (
+        <span className="num font-medium">{value}</span>
+      ) : (
+        /* Colour alone cannot say "better" to a red-green colour deficiency;
+           Delta adds the ▲/▼ and an announced direction. */
+        <Delta value={positive ? 1 : -1} format={() => value} className="font-medium" srLabel={`${label}: ${value} (${positive ? "better" : "worse"})`} />
+      )}
     </div>
   );
 }

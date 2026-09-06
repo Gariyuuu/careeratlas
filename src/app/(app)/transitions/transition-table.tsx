@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Delta } from "@/components/numeric/delta";
 
 export interface TransitionRow {
   fromSlug: string;
@@ -38,17 +39,22 @@ export function TransitionTable({ rows }: { rows: TransitionRow[] }) {
     {
       accessorKey: "salaryDeltaPct",
       header: "Salary delta",
+      meta: { numeric: true },
       cell: ({ row }) => (
-        <span className={row.original.salaryDeltaPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-          {row.original.salaryDeltaPct >= 0 ? "+" : ""}
-          {row.original.salaryDeltaPct.toFixed(1)}%
-        </span>
+        <Delta
+          value={row.original.salaryDeltaPct}
+          format={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
+          srLabel={`Salary ${row.original.salaryDeltaPct >= 0 ? "up" : "down"} ${Math.abs(row.original.salaryDeltaPct).toFixed(1)} percent moving to ${row.original.title}`}
+        />
       ),
     },
-    { accessorKey: "compatibilityScore", header: "Compatibility", cell: ({ row }) => `${row.original.compatibilityScore}/100` },
-    { accessorKey: "opportunityScore", header: "Opportunity", cell: ({ row }) => `${row.original.opportunityScore}/100` },
-    { accessorKey: "transitionDifficulty", header: "Difficulty", cell: ({ row }) => `${row.original.transitionDifficulty}/100` },
-    { accessorKey: "typicalTransitionMonths", header: "Typical time", cell: ({ row }) => `${row.original.typicalTransitionMonths} mo` },
+    { accessorKey: "compatibilityScore", header: "Compatibility", meta: { numeric: true }, cell: ({ row }) => `${row.original.compatibilityScore}/100` },
+    { accessorKey: "opportunityScore", header: "Opportunity", meta: { numeric: true }, cell: ({ row }) => `${row.original.opportunityScore}/100` },
+    // Difficulty is the one score where high is bad, so it is deliberately not
+    // given a delta treatment -- a green 90 here would mean the opposite of a
+    // green 90 in the column beside it.
+    { accessorKey: "transitionDifficulty", header: "Difficulty", meta: { numeric: true }, cell: ({ row }) => `${row.original.transitionDifficulty}/100` },
+    { accessorKey: "typicalTransitionMonths", header: "Typical time", meta: { numeric: true }, cell: ({ row }) => `${row.original.typicalTransitionMonths} mo` },
   ];
 
   return <DataTable columns={columns} data={rows} onRowClick={(row) => router.push(`/transitions/${row.fromSlug}/${row.toSlug}`)} />;

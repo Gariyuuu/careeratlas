@@ -53,7 +53,7 @@ export default async function SubindustryDetailPage({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {fam.occupations.map((occ) => (
                 <Link key={occ.slug} href={`/roles/${occ.slug}`}>
-                  <Card className="h-full hover:border-primary/50 hover:shadow-sm transition-all">
+                  <Card className="h-full hover:border-primary/50 hover:shadow-sm card-lift">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium">{occ.title}</CardTitle>
                     </CardHeader>

@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table";
 import { DataStatusBadge } from "@/components/data-status-badge";
 import { Badge } from "@/components/ui/badge";
+import { Delta } from "@/components/numeric/delta";
 
 export interface SalaryRow {
   slug: string;
@@ -29,25 +30,34 @@ export function SalaryResultsTable({ rows, showColAdjusted }: { rows: SalaryRow[
   const columns: ColumnDef<SalaryRow, unknown>[] = [
     { accessorKey: "title", header: "Role", cell: ({ row }) => <span className="font-medium">{row.original.title}</span> },
     { accessorKey: "industry", header: "Industry", cell: ({ row }) => <span className="text-muted-foreground">{row.original.industry}</span> },
-    { accessorKey: "median", header: "Median (nominal)", cell: ({ row }) => money(row.original.median) },
+    { accessorKey: "median", header: "Median (nominal)", meta: { numeric: true }, cell: ({ row }) => money(row.original.median) },
     ...(showColAdjusted
-      ? [{ accessorKey: "medianColAdjusted", header: "Median (COL-adjusted)", cell: ({ row }: { row: { original: SalaryRow } }) => money(row.original.medianColAdjusted) } as ColumnDef<SalaryRow, unknown>]
+      ? [{ accessorKey: "medianColAdjusted", header: "Median (COL-adjusted)", meta: { numeric: true }, cell: ({ row }: { row: { original: SalaryRow } }) => money(row.original.medianColAdjusted) } as ColumnDef<SalaryRow, unknown>]
       : []),
-    { accessorKey: "range", header: "P10–P90", cell: ({ row }) => `${money(row.original.p10)} – ${money(row.original.p90)}` },
+    { accessorKey: "range", header: "P10–P90", meta: { numeric: true }, cell: ({ row }) => `${money(row.original.p10)} – ${money(row.original.p90)}` },
     {
       accessorKey: "yoyChangePct",
       header: "YoY",
+      meta: { numeric: true },
+      // Was red/green text and nothing else, which is invisible to a red-green
+      // colour deficiency. Delta adds the ▲/▼ and the screen-reader phrasing.
       cell: ({ row }) =>
         row.original.yoyChangePct == null ? (
-          "—"
+          <span className="text-muted-foreground/60">—</span>
         ) : (
-          <span className={row.original.yoyChangePct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-            {row.original.yoyChangePct >= 0 ? "+" : ""}
-            {row.original.yoyChangePct.toFixed(1)}%
-          </span>
+          <Delta
+            value={row.original.yoyChangePct}
+            format={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
+            srLabel={`${row.original.title} year over year: ${row.original.yoyChangePct >= 0 ? "up" : "down"} ${Math.abs(row.original.yoyChangePct).toFixed(1)} percent`}
+          />
         ),
     },
-    { accessorKey: "sampleSize", header: "N", cell: ({ row }) => <Badge variant="outline">{row.original.sampleSize.toLocaleString()}</Badge> },
+    {
+      accessorKey: "sampleSize",
+      header: "N",
+      meta: { numeric: true },
+      cell: ({ row }) => <Badge variant="outline" className="num">{row.original.sampleSize.toLocaleString()}</Badge>,
+    },
     { accessorKey: "dataStatus", header: "Status", cell: ({ row }) => <DataStatusBadge status={row.original.dataStatus} /> },
   ];
 

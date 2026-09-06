@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MomentumLeaderboard, type MomentumRow } from "./momentum-leaderboard";
+import { Delta } from "@/components/numeric/delta";
 
 export const metadata = { title: "Industry Trends — CareerAtlas" };
 
@@ -100,7 +101,15 @@ function Leaderboard({ title, items, negative }: { title: string; items: { slug:
         {items.map((item) => (
           <Link key={item.slug} href={`/careers/${item.slug}`} className="flex items-center justify-between text-xs hover:underline">
             <span className="truncate">{item.label}</span>
-            <span className={negative ? "text-red-600 dark:text-red-400 shrink-0" : "text-emerald-600 dark:text-emerald-400 shrink-0"}>{item.value}</span>
+            {/* The leaderboard already knows its direction from `negative`;
+                the value itself is a preformatted string, so the sign is
+                supplied rather than derived. */}
+            <Delta
+              className="shrink-0"
+              value={negative ? -1 : 1}
+              format={() => item.value}
+              srLabel={`${item.label}: ${item.value} (${negative ? "declining" : "growing"})`}
+            />
           </Link>
         ))}
       </CardContent>

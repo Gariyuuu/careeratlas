@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SaveCareerButton } from "@/components/save-career-button";
 import { isOccupationSaved } from "@/lib/actions/saved-occupations";
+import { Delta } from "@/components/numeric/delta";
 
 export async function generateMetadata({ params }: { params: Promise<{ role: string }> }) {
   const { role: slug } = await params;
@@ -140,7 +141,7 @@ export default async function RoleDetailPage({ params }: { params: Promise<{ rol
                   <span className="text-sm w-48 shrink-0 truncate">{s.skill.name}</span>
                   <Progress value={s.importance * 100} className="h-2" />
                   {s.isCore && (
-                    <Badge variant="secondary" className="text-[10px] shrink-0">
+                    <Badge variant="secondary" className="text-xs shrink-0">
                       Core
                     </Badge>
                   )}
@@ -308,10 +309,11 @@ function TransitionList({
             className="flex items-center justify-between rounded-md px-2 py-1.5 -mx-2 text-sm hover:bg-muted"
           >
             <span>{item.title}</span>
-            <span className={item.delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
-              {item.delta >= 0 ? "+" : ""}
-              {item.delta.toFixed(1)}%
-            </span>
+            <Delta
+              value={item.delta}
+              format={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
+              srLabel={`${item.title}: ${item.delta >= 0 ? "up" : "down"} ${Math.abs(item.delta).toFixed(1)} percent`}
+            />
           </Link>
         ))}
       </CardContent>

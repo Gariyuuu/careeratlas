@@ -21,7 +21,7 @@ export default async function CareersPage() {
           const Icon = (Icons[toPascalCase(industry.icon) as keyof typeof Icons] as Icons.LucideIcon) ?? Icons.Briefcase;
           return (
             <Link key={industry.slug} href={`/careers/${industry.slug}`}>
-              <Card className="h-full hover:border-primary/50 hover:shadow-sm transition-all">
+              <Card className="h-full hover:border-primary/50 hover:shadow-sm card-lift">
                 <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
                   <div className="flex items-center gap-2.5">
                     <div className="flex size-9 items-center justify-center rounded-md bg-muted shrink-0">

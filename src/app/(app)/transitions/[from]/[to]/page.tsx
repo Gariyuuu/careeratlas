@@ -14,6 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Delta } from "@/components/numeric/delta";
 
 export default async function TransitionDetailPage({
   params,
@@ -79,10 +80,12 @@ export default async function TransitionDetailPage({
           <CardContent>
             <p className="text-2xl font-semibold">
               {toMedian ? `$${Math.round(toMedian.median / 1000)}k` : "—"}{" "}
-              <span className={transition.salaryDeltaPct >= 0 ? "text-emerald-600 dark:text-emerald-400 text-base" : "text-red-600 dark:text-red-400 text-base"}>
-                ({transition.salaryDeltaPct >= 0 ? "+" : ""}
-                {transition.salaryDeltaPct.toFixed(1)}%)
-              </span>
+              <Delta
+                className="text-base"
+                value={transition.salaryDeltaPct}
+                format={(v) => `(${v >= 0 ? "+" : ""}${v.toFixed(1)}%)`}
+                srLabel={`Salary ${transition.salaryDeltaPct >= 0 ? "up" : "down"} ${Math.abs(transition.salaryDeltaPct).toFixed(1)} percent after the move`}
+              />
             </p>
             {toMedian && <p className="text-xs text-muted-foreground">${Math.round(toMedian.p10 / 1000)}k – ${Math.round(toMedian.p90 / 1000)}k range</p>}
           </CardContent>

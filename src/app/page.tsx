@@ -148,10 +148,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Feature({ title, description, href }: { title: string; description: string; href: string }) {
   return (
-    <Link href={href} className="group rounded-lg border p-5 hover:border-primary/50 hover:shadow-sm transition-all">
+    <Link href={href} className="group rounded-lg border p-5 hover:border-primary/50 hover:shadow-sm card-lift">
       <h3 className="font-medium flex items-center gap-1.5">
         {title}
-        <ArrowRight className="size-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+        <ArrowRight className="size-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 arrow-nudge" />
       </h3>
       <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{description}</p>
     </Link>

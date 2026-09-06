@@ -67,7 +67,7 @@ export function GlobalSearch() {
       >
         <Search className="size-4" />
         Search roles, e.g. &ldquo;SWE&rdquo; or &ldquo;Data Scientist&rdquo;
-        <kbd className="ml-auto hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium">
+        <kbd className="ml-auto hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-xs font-medium">
           ⌘K
         </kbd>
       </Button>

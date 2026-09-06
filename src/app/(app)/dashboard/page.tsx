@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Delta } from "@/components/numeric/delta";
 
 export const metadata = { title: "Dashboard — CareerAtlas" };
 
@@ -105,7 +106,7 @@ export default async function DashboardPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             {occ.transitionsFrom.map((t) => (
               <Link key={t.id} href={`/transitions/${occ.slug}/${t.toOccupation.slug}`}>
-                <Card className="hover:border-primary/50 transition-all">
+                <Card className="hover:border-primary/50 card-lift">
                   <CardContent className="pt-5">
                     <p className="text-sm font-medium">{t.toOccupation.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -166,7 +167,12 @@ export default async function DashboardPage() {
             {trendingRoles.map((r) => (
               <Link key={r.slug} href={`/roles/${r.slug}`} className="flex items-center justify-between text-sm hover:underline">
                 <span className="truncate">{r.title}</span>
-                <span className="text-emerald-600 dark:text-emerald-400 shrink-0">+{r.growthPct.toFixed(0)}%</span>
+                <Delta
+                  className="shrink-0"
+                  value={r.growthPct}
+                  format={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%`}
+                  srLabel={`${r.title}: ${r.growthPct >= 0 ? "up" : "down"} ${Math.abs(r.growthPct).toFixed(0)} percent`}
+                />
               </Link>
             ))}
           </CardContent>
@@ -180,7 +186,12 @@ export default async function DashboardPage() {
             {decliningRoles.map((r) => (
               <Link key={r.slug} href={`/roles/${r.slug}`} className="flex items-center justify-between text-sm hover:underline">
                 <span className="truncate">{r.title}</span>
-                <span className="text-red-600 dark:text-red-400 shrink-0">{r.growthPct.toFixed(0)}%</span>
+                <Delta
+                  className="shrink-0"
+                  value={r.growthPct}
+                  format={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%`}
+                  srLabel={`${r.title}: ${r.growthPct >= 0 ? "up" : "down"} ${Math.abs(r.growthPct).toFixed(0)} percent`}
+                />
               </Link>
             ))}
           </CardContent>

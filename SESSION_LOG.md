@@ -107,6 +107,60 @@ session's clean baseline still holds.
 
 ---
 
+## 2026-09-05 — W9 UI/UX overhaul (numbers-first design pass)
+
+**Who:** Claude Code session running the `/overhaul` skill against group **W9** of
+`~/Projects/OVERHAUL-GROUPS.md` (Finance, Markets, Trackers & Briefings — 12 repos).
+Polish pass only: no product architecture, backend logic, schema, auth or route
+changes.
+
+**The shared piece.** A new layer was added to the portfolio design system at
+`~/Projects/.design-system/families/numerics.css` (v1.0) — a *family* layer sitting
+between `MASTER.css` and per-project overrides, holding the decisions that are correct
+for numbers-first surfaces and meaningless elsewhere: tabular numerals, right-aligned
+numeric columns, delta/PnL semantics with a **non-colour** cue, one sparkline stroke
+spec, the shared feed card, freshness/refresh states, and a no-data surface distinct
+from an error. `MASTER.css` itself was NOT modified, so no repo outside W9 is affected
+and no vendored MASTER copy went stale. See `.design-system/CHANGELOG.md` and
+`.design-system/families/README.md`.
+
+**The rule that layer exists to enforce:** a signed number never states its direction
+in colour alone. `.delta[data-dir]` emits ▲/▼/– from `::before`, so a call site cannot
+forget it.
+
+**What was done here:**
+
+- Vendored `src/app/design-system/numerics.css`; copied the family's numeric
+  components into `src/components/numeric/`.
+- `DataTable` gained a typed `meta: { numeric: true }` column option (module
+  augmentation on `ColumnMeta`) which applies `.num-col` to the header **and** the
+  body cell together — the two have to move as a pair or the heading floats away from
+  its column. Rows with `onRowClick` are now keyboard-operable (`role="link"`,
+  `tabIndex`, Enter/Space); previously they responded only to a mouse.
+- **Six colour-only direction cues replaced with `<Delta>`** (green/red text with no
+  shape): salary YoY, transition salary delta, education-compare rows, role-detail
+  related list, dashboard trending/declining lists, trends leaderboards, and the
+  transition detail header. Each also gained an explicit screen-reader phrasing —
+  without one, "+3" and "-3" sound identical to a cue nobody can hear.
+- Transition difficulty is deliberately **not** given delta treatment: it is the one
+  score where high is bad, and a green 90 there would mean the opposite of a green 90
+  in the column beside it.
+- **New** `src/components/charts/chart-theme.ts`: one tooltip style (with tabular
+  figures), one axis tick style, a `SERIES_DASH` ladder, and `useChartAnimation()`.
+  All four Recharts wrappers now honour `prefers-reduced-motion`.
+- **Fixed a MASTER chart-rule violation:** `salary-trend-chart` gave its three
+  scenario lines (conservative / expected / aggressive) the *same* `"4 3"` dash, so
+  they were distinguished by hue alone. Each now carries its own pattern.
+- Hygiene: 13 × `text-[10px]` raised to 12px; 6 × `transition-all` replaced with
+  `.card-lift` / `.arrow-nudge`.
+
+**Verification:** `npx tsc --noEmit` 0 errors; `npm run lint` 0 errors, 1 warning (pre-existing TanStack `useReactTable` memoization notice); `npm run test` 34/34 pass. `npm run build` and `npm run test:e2e` NOT run — both hit the live Neon database.
+
+**Not done / deliberately out of scope:** no commits, no push, no deploy. Product
+behaviour, routes, data model and auth are unchanged.
+
+---
+
 ## 2026-08-07 — Final transfer checkpoint / doc re-verification pass
 
 **Account/agent**: unknown (Claude Code session; identity not tracked/passed

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./design-system/master.css";
+@import "./design-system/numerics.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -182,5 +183,23 @@
 @media (prefers-reduced-motion: reduce) {
   .fx-bookmark-pop {
     animation: none;
+  }
+}
+/* ---- card lift ------------------------------------------------------------
+ * The clickable-card hover was `transition-all` in six places. `all` also
+ * transitions properties nobody meant to animate, and MASTER G10 bans it in
+ * authored code. These are the properties the hover actually changes.
+ * -------------------------------------------------------------------------- */
+@layer components {
+  .card-lift {
+    transition: border-color var(--duration) var(--ease),
+                box-shadow var(--duration) var(--ease),
+                background-color var(--duration) var(--ease),
+                transform var(--duration) var(--ease);
+  }
+  /* The landing page's hover arrow slides and fades; those two, nothing else. */
+  .arrow-nudge {
+    transition: opacity var(--duration) var(--ease),
+                transform var(--duration) var(--ease);
   }
 }

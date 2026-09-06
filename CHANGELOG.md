@@ -6,6 +6,34 @@ user-facing version-numbering scheme anywhere in the repo (`package.json`'s
 are either a documentation pass's own work or reconstructed from `git log`
 — nothing is invented.
 
+## 2026-09-05 — W9 UI/UX overhaul (numbers-first design pass)
+
+Polish pass via the `/overhaul` skill against group **W9** of
+`~/Projects/OVERHAUL-GROUPS.md`. No product architecture, backend logic, schema, auth
+or route changes. The group's shared decisions now live in a new portfolio design-system
+layer, `~/Projects/.design-system/families/numerics.css` (v1.0), vendored here — see
+`UI_SYSTEM.md`. `MASTER.css` itself was not modified.
+
+### Added
+- Numerics family layer (vendored) + `src/components/numeric/`.
+- `DataTable` supports `meta: { numeric: true }`, applying right-aligned tabular
+  treatment to a column's header and body cells together.
+- `src/components/charts/chart-theme.ts` — shared tooltip/axis styling, `SERIES_DASH`,
+  and `useChartAnimation()`.
+
+### Fixed
+- **Six colour-only up/down cues** (salary YoY, transition salary delta, education
+  compare, role-detail related list, dashboard trending/declining, trends leaderboards)
+  were green/red text with no shape cue. All now use `<Delta>` with an explicit
+  screen-reader phrasing.
+- **`salary-trend-chart` gave its three scenario lines the same `"4 3"` dash**, leaving
+  them distinguished by hue alone — a MASTER chart-rule violation. Each now carries its
+  own pattern.
+- All four Recharts wrappers now honour `prefers-reduced-motion`.
+- Clickable table rows responded only to a mouse; they are now keyboard-operable
+  (`role="link"`, `tabIndex`, Enter/Space).
+- 13 × `text-[10px]` raised to the 12px floor; 6 × `transition-all` replaced.
+
 ## 2026-08-17 — Documentation re-verification (onboarding pass)
 
 Onboarding-mode pass: arrived at the repo, found the existing 19-file

@@ -18,7 +18,7 @@ const STYLES: Record<string, string> = {
 export function DataStatusBadge({ status, className }: { status?: string | null; className?: string }) {
   if (!status) return null;
   return (
-    <Badge className={cn("text-[10px] font-medium", STYLES[status] ?? "", className)}>
+    <Badge className={cn("text-xs font-medium", STYLES[status] ?? "", className)}>
       {LABELS[status] ?? status}
     </Badge>
   );
